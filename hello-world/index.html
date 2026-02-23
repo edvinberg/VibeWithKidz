@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SNO SMANSEN: Skolans Hjälte</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{overflow:hidden;background:#000;font-family:'Courier New',monospace;image-rendering:pixelated}
+canvas{display:block;image-rendering:pixelated}
+
+#hud{position:fixed;top:0;left:0;width:100%;padding:15px 25px;display:none;z-index:100;pointer-events:none}
+#hearts{font-size:32px;float:left;filter:drop-shadow(0 0 4px #f00)}
+#score-display{float:right;font-size:24px;font-weight:bold;color:#FFD700;text-shadow:2px 2px 0 #000,0 0 10px #FFD700}
+#level-display{position:fixed;top:55px;left:25px;font-size:18px;color:#adf;text-shadow:2px 2px 0 #000;display:none;z-index:100;pointer-events:none}
+#boss-bar-container{position:fixed;bottom:40px;left:50%;transform:translateX(-50%);width:400px;max-width:80vw;display:none;z-index:100;pointer-events:none}
+#boss-name{text-align:center;color:#ff4444;font-size:18px;font-weight:bold;text-shadow:2px 2px 0 #000;margin-bottom:5px}
+#boss-bar-bg{width:100%;height:16px;background:#333;border:3px solid #555}
+#boss-bar{width:100%;height:100%;background:linear-gradient(180deg,#ff4444,#cc0000 50%,#ff2222);transition:width .3s}
+
+/* Timer bar for classroom */
+#timer-container{position:fixed;top:90px;left:50%;transform:translateX(-50%);width:350px;max-width:70vw;display:none;z-index:100;pointer-events:none}
+#timer-label{text-align:center;color:#ff0;font-size:16px;font-weight:bold;text-shadow:2px 2px 0 #000;margin-bottom:4px}
+#timer-bg{width:100%;height:14px;background:#333;border:2px solid #ff0}
+#timer-bar{width:100%;height:100%;background:linear-gradient(90deg,#0f0,#ff0);transition:width .1s}
+
+/* Trash counter */
+#trash-display{position:fixed;top:55px;right:25px;font-size:20px;color:#fff;text-shadow:2px 2px 0 #000;display:none;z-index:100;pointer-events:none}
+
+.popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:52px;font-weight:900;color:#FFD700;z-index:200;text-shadow:4px 4px 0 #000,0 0 20px #FFD700;animation:popA 1.5s ease-out forwards;pointer-events:none}
+@keyframes popA{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}30%{transform:translate(-50%,-50%) scale(1.3);opacity:1}60%{transform:translate(-50%,-50%) scale(1)}100%{transform:translate(-50%,-80%) scale(1.2);opacity:0}}
+.score-pop{position:fixed;z-index:150;font-size:24px;font-weight:900;pointer-events:none;animation:sP 1s ease-out forwards;text-shadow:2px 2px 0 #000}
+@keyframes sP{0%{transform:translateY(0) scale(.5);opacity:0}20%{transform:translateY(-10px) scale(1.2);opacity:1}100%{transform:translateY(-80px) scale(.8);opacity:0}}
+/* Teacher shout */
+.teacher-shout{position:fixed;top:30%;left:50%;transform:translate(-50%,-50%);font-size:72px;font-weight:900;color:#f00;z-index:250;text-shadow:4px 4px 0 #000,0 0 30px #f00;animation:shout 2s ease-out forwards;pointer-events:none}
+@keyframes shout{0%{transform:translate(-50%,-50%) scale(2);opacity:0}15%{transform:translate(-50%,-50%) scale(1.1);opacity:1}70%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-60%) scale(.8);opacity:0}}
+
+#screen-flash{position:fixed;top:0;left:0;width:100%;height:100%;background:#fff;opacity:0;pointer-events:none;z-index:300;transition:opacity .05s}
+
+/* Title / Select */
+#title-overlay{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:500;background:rgba(0,0,10,.75)}
+#title-text{font-size:60px;font-weight:900;color:#fff;text-shadow:4px 4px 0 #222,0 0 20px #0bf,0 0 40px #06f;animation:tP 2s ease-in-out infinite;letter-spacing:6px}
+#subtitle{font-size:22px;color:#adf;margin-top:8px;text-shadow:2px 2px 0 #000}
+@keyframes tP{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+
+#char-select{margin-top:30px;display:flex;gap:30px}
+.char-option{cursor:pointer;text-align:center;padding:15px 20px;border:3px solid #555;background:rgba(0,0,0,.5);transition:all .2s}
+.char-option:hover,.char-option.selected{border-color:#FFD700;background:rgba(255,215,0,.15);transform:scale(1.08)}
+.char-name{font-size:18px;color:#fff;margin-top:8px;text-shadow:1px 1px 0 #000}
+.char-desc{font-size:12px;color:#aaa;margin-top:3px}
+#start-prompt{font-size:20px;color:#FFD700;margin-top:35px;animation:blink 1.2s steps(2) infinite;text-shadow:2px 2px 0 #000}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+#victory-overlay{position:fixed;top:0;left:0;width:100%;height:100%;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:500;background:rgba(0,0,20,.85)}
+#victory-text{font-size:68px;font-weight:900;color:#FFD700;text-shadow:4px 4px 0 #000,0 0 30px #FFD700;animation:rb 3s steps(6) infinite}
+#final-score{font-size:30px;color:#FFD700;margin-top:20px;text-shadow:2px 2px 0 #000}
+#replay-prompt{font-size:20px;color:#5f5;margin-top:40px;animation:blink 1.2s steps(2) infinite;text-shadow:2px 2px 0 #000}
+@keyframes rb{0%{color:#f55}16%{color:#fa0}33%{color:#ff5}50%{color:#5f5}66%{color:#5ff}83%{color:#f5f}100%{color:#f55}}
+
+#level-transition{position:fixed;top:0;left:0;width:100%;height:100%;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:400;background:rgba(0,0,10,.95)}
+#level-transition h1{font-size:48px;color:#5ff;text-shadow:3px 3px 0 #000}
+#level-transition p{font-size:18px;color:#adf;margin-top:12px;text-shadow:2px 2px 0 #000}
+</style>
+</head>
+<body>
+<div id="screen-flash"></div>
+
+<div id="title-overlay">
+  <div id="title-text">SNO SMANSEN</div>
+  <div id="subtitle">Skolans Hjälte</div>
+  <div id="char-select">
+    <div class="char-option selected" data-char="0">
+      <canvas id="char-preview-0" width="64" height="80"></canvas>
+      <div class="char-name">Kansen</div>
+      <div class="char-desc">Snabb som en iller</div>
+    </div>
+    <div class="char-option" data-char="1">
+      <canvas id="char-preview-1" width="64" height="80"></canvas>
+      <div class="char-name">Bansen</div>
+      <div class="char-desc">Tuff som en sten</div>
+    </div>
+    <div class="char-option" data-char="2">
+      <canvas id="char-preview-2" width="64" height="80"></canvas>
+      <div class="char-name">Smansen</div>
+      <div class="char-desc">Cool som en glass</div>
+    </div>
+  </div>
+  <div id="start-prompt">[PILAR = välj | SPACE = kör!]</div>
+  <div id="start-btn" style="margin-top:20px;padding:15px 50px;background:#FFD700;color:#000;font-size:28px;font-weight:900;cursor:pointer;border:4px solid #fff;font-family:'Courier New',monospace">STARTA!</div>
+  <div id="err-display" style="color:#f00;font-size:14px;margin-top:10px;max-width:80vw;word-break:break-all"></div>
+</div>
+
+<div id="hud">
+  <div id="hearts">❤️❤️❤️</div>
+  <div id="score-display">Poäng: 0</div>
+</div>
+<div id="level-display"></div>
+<div id="trash-display"></div>
+<div id="timer-container"><div id="timer-label">STÄDTID!</div><div id="timer-bg"><div id="timer-bar"></div></div></div>
+<div id="boss-bar-container"><div id="boss-name">SANSEN SANSEN</div><div id="boss-bar-bg"><div id="boss-bar"></div></div></div>
+<div id="level-transition"><h1></h1><p></p></div>
+<div id="victory-overlay">
+  <div id="victory-text">JULLOV BABY!</div>
+  <div id="final-score"></div>
+  <div id="replay-prompt">[SPACE = en runda till!]</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+window.onerror=function(msg,url,line){var d=document.getElementById('err-display');if(d)d.textContent='FEL rad '+line+': '+msg;};
+</script>
+<script>
+// ============================================================
+//  SNO SMANSEN - MINECRAFT EDITION v2
+// ============================================================
+
+// --- TEXTURE GEN ---
+function makeTex(w,h,fn){const c=document.createElement('canvas');c.width=w;c.height=h;fn(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);t.magFilter=THREE.NearestFilter;t.minFilter=THREE.NearestFilter;return t;}
+function blockMat(t){return new THREE.MeshLambertMaterial({map:t})}
+function blockMatArr(s,t,b){return[blockMat(s),blockMat(s),blockMat(t||s),blockMat(b||s),blockMat(s),blockMat(s)]}
+
+const tex={};
+function genTex(){
+  tex.snow=makeTex(16,16,(c)=>{for(let i=0;i<16;i++)for(let j=0;j<16;j++){const v=230+Math.random()*25;c.fillStyle=`rgb(${v},${v},${Math.min(255,v+10)})`;c.fillRect(i,j,1,1)}});
+  tex.snowSide=makeTex(16,16,(c)=>{for(let i=0;i<16;i++)for(let j=3;j<16;j++){const v=120+Math.random()*30;c.fillStyle=`rgb(${v},${v},${v})`;c.fillRect(i,j,1,1)}for(let i=0;i<16;i++)for(let j=0;j<4;j++){const v=230+Math.random()*25;c.fillStyle=`rgb(${v},${v},${Math.min(255,v+10)})`;c.fillRect(i,j,1,1)}});
+  tex.dirt=makeTex(16,16,(c)=>{for(let i=0;i<16;i++)for(let j=0;j<16;j++){const v=100+Math.random()*40;c.fillStyle=`rgb(${v*.6},${v*.45},${v*.15})`;c.fillRect(i,j,1,1)}});
+  tex.stone=makeTex(16,16,(c)=>{for(let i=0;i<16;i++)for(let j=0;j<16;j++){const v=120+Math.random()*30;c.fillStyle=`rgb(${v},${v},${v})`;c.fillRect(i,j,1,1)}c.fillStyle='#666';c.fillRect(2,5,4,1);c.fillRect(9,10,5,1)});
+  tex.ice=makeTex(16,16,(c)=>{for(let i=0;i<16;i++)for(let j=0;j<16;j++){const v=150+Math.random()*40;c.fillStyle=`rgba(${v*.6},${v*.8},${Math.min(255,v+40)},.85)`;c.fillRect(i,j,1,1)}});
+  tex.wood=makeTex(16,16,(c)=>{for(let i=0;i<16;i++)for(let j=0;j<16;j++){const v=90+Math.random()*25;c.fillStyle=`rgb(${v*.7},${v*.5},${v*.2})`;c.fillRect(i,j,1,1)}c.fillStyle='#3a2510';for(let x=3;x<16;x+=4)c.fillRect(x,0,1,16)});
+  tex.snowLeaves=makeTex(16,16,(c)=>{for(let i=0;i<16;i++)for(let j=0;j<16;j++){if(j<5||Math.random()>.6){const v=220+Math.random()*35;c.fillStyle=`rgb(${v},${v},${v})`}else{const v=30+Math.random()*30;c.fillStyle=`rgb(${v},${v*2+50},${v*.5})`}c.fillRect(i,j,1,1)}});
+  tex.plank=makeTex(16,16,(c)=>{for(let i=0;i<16;i++)for(let j=0;j<16;j++){const v=160+Math.random()*30;c.fillStyle=`rgb(${v},${v*.75},${v*.4})`;c.fillRect(i,j,1,1)}c.fillStyle='#7a5a30';c.fillRect(0,4,16,1);c.fillRect(0,8,16,1);c.fillRect(0,12,16,1)});
+  // Classroom floor
+  tex.floor=makeTex(16,16,(c)=>{for(let i=0;i<16;i++)for(let j=0;j<16;j++){const ch=((Math.floor(i/4)+Math.floor(j/4))%2===0);const v=ch?170+Math.random()*20:140+Math.random()*20;c.fillStyle=`rgb(${v*.9},${v*.8},${v*.6})`;c.fillRect(i,j,1,1)}});
+  // Hockey ice
+  tex.hockeyIce=makeTex(16,16,(c)=>{for(let i=0;i<16;i++)for(let j=0;j<16;j++){const v=210+Math.random()*30;c.fillStyle=`rgb(${v*.9},${v*.95},${Math.min(255,v)})`;c.fillRect(i,j,1,1)}c.fillStyle='rgba(200,50,50,0.3)';c.fillRect(7,0,2,16)});
+}
+
+// --- CHARACTER CONFIGS ---
+const charConfigs=[
+  {name:'Kansen',hoodie:'#cc2222',cap:'#2244bb',skin:'#d4a574'},
+  {name:'Bansen',hoodie:'#2266cc',cap:'#22aa44',skin:'#c4956a'},
+  {name:'Smansen',hoodie:'#aa22cc',cap:'#ffaa00',skin:'#e0b090'},
+];
+let selectedChar=0;
+
+// Draw char previews on title screen
+function drawCharPreviews(){
+  charConfigs.forEach((ch,i)=>{
+    const cv=document.getElementById('char-preview-'+i);
+    if(!cv)return;
+    const c=cv.getContext('2d');
+    c.imageSmoothingEnabled=false;
+    // Head
+    c.fillStyle=ch.skin;c.fillRect(18,8,28,28);
+    // Eyes
+    c.fillStyle='#fff';c.fillRect(22,16,8,6);c.fillRect(34,16,8,6);
+    c.fillStyle='#111';c.fillRect(24,16,5,6);c.fillRect(36,16,5,6);
+    // Smirk
+    c.fillStyle='#622';c.fillRect(26,28,12,3);
+    // Backwards cap
+    c.fillStyle=ch.cap;c.fillRect(16,4,32,12);
+    c.fillRect(20,16,8,4); // brim on side/back
+    // Hoodie
+    c.fillStyle=ch.hoodie;c.fillRect(14,38,36,28);
+    // Arms
+    c.fillRect(6,38,10,24);c.fillRect(48,38,10,24);
+    // Legs
+    c.fillStyle='#224';c.fillRect(18,66,12,14);c.fillRect(34,66,12,14);
+  });
+}
+
+// Char select click handlers
+document.querySelectorAll('.char-option').forEach(el=>{
+  el.addEventListener('click',()=>{
+    selectedChar=parseInt(el.dataset.char);
+    updateCharSelect();
+    ea();startGame();
+  });
+});
+document.getElementById('start-prompt').style.pointerEvents='auto';
+document.getElementById('start-prompt').style.cursor='pointer';
+document.getElementById('start-prompt').addEventListener('click',()=>{try{ea();startGame()}catch(err){document.getElementById('err-display').textContent='FEL: '+err.message}});
+document.getElementById('start-btn').addEventListener('click',()=>{try{ea();startGame()}catch(err){document.getElementById('err-display').textContent='FEL: '+err.message}});
+
+// --- AUDIO ---
+const AC=window.AudioContext||window.webkitAudioContext;let ac;
+function ea(){if(!ac)ac=new AC()}
+function playJump(){ea();const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='square';o.frequency.setValueAtTime(250,ac.currentTime);o.frequency.exponentialRampToValueAtTime(600,ac.currentTime+.1);g.gain.setValueAtTime(.15,ac.currentTime);g.gain.exponentialRampToValueAtTime(.01,ac.currentTime+.12);o.start();o.stop(ac.currentTime+.12)}
+function playHit(){ea();const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sawtooth';o.frequency.setValueAtTime(120,ac.currentTime);o.frequency.exponentialRampToValueAtTime(30,ac.currentTime+.2);g.gain.setValueAtTime(.25,ac.currentTime);g.gain.exponentialRampToValueAtTime(.01,ac.currentTime+.2);o.start();o.stop(ac.currentTime+.2)}
+function playCollect(){ea();const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='square';o.frequency.setValueAtTime(520,ac.currentTime);o.frequency.setValueAtTime(780,ac.currentTime+.08);g.gain.setValueAtTime(.15,ac.currentTime);g.gain.exponentialRampToValueAtTime(.01,ac.currentTime+.25);o.start();o.stop(ac.currentTime+.25)}
+function playShoot(){ea();const n=ac.createBufferSource(),buf=ac.createBuffer(1,ac.sampleRate*.08,ac.sampleRate),d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length);n.buffer=buf;const g=ac.createGain();n.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(.12,ac.currentTime);g.gain.exponentialRampToValueAtTime(.01,ac.currentTime+.08);n.start()}
+function playBossHit(){ea();const o=ac.createOscillator(),o2=ac.createOscillator(),g=ac.createGain();o.connect(g);o2.connect(g);g.connect(ac.destination);o.type='sawtooth';o2.type='square';o.frequency.setValueAtTime(80,ac.currentTime);o.frequency.exponentialRampToValueAtTime(25,ac.currentTime+.3);o2.frequency.setValueAtTime(60,ac.currentTime);o2.frequency.exponentialRampToValueAtTime(18,ac.currentTime+.3);g.gain.setValueAtTime(.2,ac.currentTime);g.gain.exponentialRampToValueAtTime(.01,ac.currentTime+.3);o.start();o2.start();o.stop(ac.currentTime+.3);o2.stop(ac.currentTime+.3)}
+function playVictory(){ea();[523,659,784,1047,1319,1568].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='square';o.frequency.setValueAtTime(f,ac.currentTime+i*.1);g.gain.setValueAtTime(0,ac.currentTime+i*.1);g.gain.linearRampToValueAtTime(.12,ac.currentTime+i*.1+.03);g.gain.exponentialRampToValueAtTime(.01,ac.currentTime+i*.1+.3);o.start(ac.currentTime+i*.1);o.stop(ac.currentTime+i*.1+.3)})}
+function playPowerup(){ea();[400,520,660,800,1000].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='square';o.frequency.setValueAtTime(f,ac.currentTime+i*.05);g.gain.setValueAtTime(.1,ac.currentTime+i*.05);g.gain.exponentialRampToValueAtTime(.01,ac.currentTime+i*.05+.12);o.start(ac.currentTime+i*.05);o.stop(ac.currentTime+i*.05+.12)})}
+function playEnemyDie(){ea();const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='square';o.frequency.setValueAtTime(600,ac.currentTime);o.frequency.exponentialRampToValueAtTime(80,ac.currentTime+.25);g.gain.setValueAtTime(.12,ac.currentTime);g.gain.exponentialRampToValueAtTime(.01,ac.currentTime+.25);o.start();o.stop(ac.currentTime+.25)}
+function playWhistle(){ea();const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.setValueAtTime(800,ac.currentTime);o.frequency.setValueAtTime(1200,ac.currentTime+.15);o.frequency.setValueAtTime(800,ac.currentTime+.3);g.gain.setValueAtTime(.2,ac.currentTime);g.gain.exponentialRampToValueAtTime(.01,ac.currentTime+.4);o.start();o.stop(ac.currentTime+.4)}
+function playSave(){ea();[600,800,1000].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='square';o.frequency.setValueAtTime(f,ac.currentTime+i*.06);g.gain.setValueAtTime(.12,ac.currentTime+i*.06);g.gain.exponentialRampToValueAtTime(.01,ac.currentTime+i*.06+.15);o.start(ac.currentTime+i*.06);o.stop(ac.currentTime+i*.06+.15)})}
+function playGoal(){ea();const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sawtooth';o.frequency.setValueAtTime(200,ac.currentTime);o.frequency.exponentialRampToValueAtTime(50,ac.currentTime+.5);g.gain.setValueAtTime(.3,ac.currentTime);g.gain.exponentialRampToValueAtTime(.01,ac.currentTime+.5);o.start();o.stop(ac.currentTime+.5)}
+function playTeacherYell(){ea();const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='square';o.frequency.setValueAtTime(300,ac.currentTime);o.frequency.setValueAtTime(500,ac.currentTime+.05);o.frequency.setValueAtTime(400,ac.currentTime+.1);o.frequency.setValueAtTime(600,ac.currentTime+.15);g.gain.setValueAtTime(.15,ac.currentTime);g.gain.exponentialRampToValueAtTime(.01,ac.currentTime+.3);o.start();o.stop(ac.currentTime+.3)}
+
+// --- MUSIC ---
+const music={playing:false,currentTrack:null,timer:null,step:0,nodes:[],
+  nf:{'C3':131,'D3':147,'E3':165,'F3':175,'G3':196,'A3':220,'B3':247,'C4':262,'D4':294,'E4':330,'F4':349,'G4':392,'A4':440,'B4':494,'C5':523,'D5':587,'E5':659,'F5':698,'G5':784,'A5':880,'_':0},
+  tracks:{
+    level:{
+      mel:['E4','E4','_','E4','_','C4','E4','_','G4','_','_','_','G3','_','_','_','C4','_','_','G3','_','_','E3','_','_','A3','_','B3','_','A3','G3','_','E4','_','G4','A4','_','F4','G4','_','E4','_','C4','D4','B3','_','_','_'],
+      bas:['C3','_','C3','_','C3','_','C3','_','G3','_','G3','_','G3','_','G3','_','C3','_','_','G3','_','_','C3','_','_','F3','_','F3','_','F3','G3','_','A3','_','A3','_','F3','_','F3','_','C3','_','C3','_','G3','_','G3','_'],
+      arp:['C5','E5','G5','C5','E5','G5','C5','E5','B4','D5','G5','B4','D5','G5','B4','D5','C5','E5','G5','E5','B4','D5','G5','D5','A4','C5','E5','A4','C5','F5','A5','F5','A4','C5','E5','C5','F4','A4','C5','A4','E4','G4','C5','E4','G4','B4','D5','G4'],
+    },
+    boss:{
+      mel:['E3','E3','E4','E3','E3','E4','E3','E4','D3','D3','D4','D3','D3','D4','D3','D4','C3','C3','C4','C3','G3','G3','G4','G3','A3','A3','A4','A3','B3','B3','B4','B3'],
+      bas:['E3','_','E3','_','E3','_','E3','_','D3','_','D3','_','D3','_','D3','_','C3','_','C3','_','G3','_','G3','_','A3','_','A3','_','B3','_','B3','_'],
+      arp:['B4','E5','B4','E5','B4','E5','B4','E5','A4','D5','A4','D5','A4','D5','A4','D5','G4','C5','G4','C5','B4','G5','B4','G5','A4','E5','A4','E5','B4','F5','B4','F5'],
+    },
+    victory:{
+      mel:['C5','E5','G5','C5','_','_','G5','C5','E5','G5','C5','E5','_','_','C5','E5','D5','F5','A5','D5','_','_','A5','D5','C5','E5','G5','C5','_','_','_','_'],
+      bas:['C3','_','G3','_','C3','_','G3','_','C3','_','G3','_','C3','_','G3','_','F3','_','C4','_','F3','_','C4','_','C3','_','G3','_','C3','_','G3','_'],
+      arp:['E5','G5','C5','G5','E5','G5','C5','G5','E5','G5','C5','G5','E5','G5','C5','G5','F5','A5','D5','A5','F5','A5','D5','A5','E5','G5','C5','G5','E5','G5','C5','G5'],
+    },
+    classroom:{
+      mel:['C4','E4','G4','E4','C4','E4','G4','E4','F4','A4','C5','A4','F4','A4','C5','A4','D4','F4','A4','F4','D4','F4','A4','F4','G4','B4','D5','B4','G3','_','_','_'],
+      bas:['C3','_','C3','_','C3','_','C3','_','F3','_','F3','_','F3','_','F3','_','D3','_','D3','_','D3','_','D3','_','G3','_','G3','_','G3','_','G3','_'],
+      arp:['E5','G5','E5','G5','E5','G5','E5','G5','A5','C5','A5','C5','A5','C5','A5','C5','F5','A5','F5','A5','F5','A5','F5','A5','B4','D5','B4','D5','B4','D5','B4','D5'],
+    }
+  },
+  pn(freq,type,vol,dur){if(!freq||!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type=type;o.frequency.setValueAtTime(freq,ac.currentTime);g.gain.setValueAtTime(vol,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+dur*.9);o.start();o.stop(ac.currentTime+dur);this.nodes.push(o);o.onended=()=>{const i=this.nodes.indexOf(o);if(i>=0)this.nodes.splice(i,1)}},
+  start(t){ea();if(this.currentTrack===t&&this.playing)return;this.stop();this.currentTrack=t;this.playing=true;this.step=0;const tr=this.tracks[t];if(!tr)return;const bpm=t==='boss'?170:t==='victory'?120:140;const sd=60/bpm/2;const tick=()=>{if(!this.playing)return;const m=tr.mel[this.step%tr.mel.length],b=tr.bas[this.step%tr.bas.length],a=tr.arp[this.step%tr.arp.length];if(m!=='_')this.pn(this.nf[m],'square',.06,sd*1.8);if(b!=='_')this.pn(this.nf[b]*.5,'sawtooth',.04,sd*1.5);if(a!=='_')this.pn(this.nf[a],'square',.02,sd*.6);this.step++;this.timer=setTimeout(tick,sd*1000)};tick()},
+  stop(){this.playing=false;this.currentTrack=null;if(this.timer){clearTimeout(this.timer);this.timer=null}this.nodes.forEach(o=>{try{o.stop()}catch(e){}});this.nodes=[]},
+  switchTo(t){if(this.currentTrack!==t)this.start(t)}
+};
+
+// --- FX ---
+function screenFlash(c='#fff',d=100){const el=document.getElementById('screen-flash');el.style.background=c;el.style.opacity='.5';setTimeout(()=>el.style.opacity='0',d)}
+function showPopup(t,c='#FFD700'){const el=document.createElement('div');el.className='popup';el.textContent=t;el.style.color=c;document.body.appendChild(el);setTimeout(()=>el.remove(),1500)}
+function showScorePop(t,x,y,c='#FFD700'){const el=document.createElement('div');el.className='score-pop';el.textContent=t;el.style.color=c;el.style.left=x+'px';el.style.top=y+'px';el.style.textShadow=`2px 2px 0 #000,0 0 8px ${c}`;document.body.appendChild(el);setTimeout(()=>el.remove(),1000)}
+function teacherShout(t){const el=document.createElement('div');el.className='teacher-shout';el.textContent=t;document.body.appendChild(el);setTimeout(()=>el.remove(),2000);playTeacherYell()}
+
+// --- THREE.JS ---
+const W=window.innerWidth,H=window.innerHeight;
+const GROUND=-3;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(55,W/H,.1,200);camera.position.set(0,2,14);
+const renderer=new THREE.WebGLRenderer({antialias:false});
+renderer.setSize(W,H);renderer.setPixelRatio(1);
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.BasicShadowMap;
+document.body.appendChild(renderer.domElement);
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+
+scene.add(new THREE.AmbientLight(0x8899cc,.7));
+const dirL=new THREE.DirectionalLight(0xfff8e0,1);dirL.position.set(8,15,10);dirL.castShadow=true;
+dirL.shadow.mapSize.set(1024,1024);dirL.shadow.camera.left=-25;dirL.shadow.camera.right=25;dirL.shadow.camera.top=15;dirL.shadow.camera.bottom=-10;
+scene.add(dirL);
+scene.background=new THREE.Color(0x7ba4d8);scene.fog=new THREE.Fog(0x7ba4d8,25,60);
+
+genTex();
+
+// --- GAME STATE ---
+const G={state:'title',level:1,score:0,lives:3,
+  pvx:0,pvy:0,onGround:false,facing:1,
+  invincible:false,invTimer:0,
+  shootCD:0,shakeAmt:0,shakeDur:0,
+  camX:0,camY:2,
+  bossHP:0,bossMax:20,
+  keys:{},dt:0,time:0,
+  // Classroom specific
+  trashCount:0,trashCollected:0,cleanTimer:0,cleanDuration:6,isCleanPhase:false,classroomRound:0,classroomMaxRounds:5,
+  // Boss specific
+  pucksSaved:0,pucksGoal:0,bossRound:0,
+};
+
+function updateCharSelect(){
+  document.querySelectorAll('.char-option').forEach((el,i)=>{
+    if(i===selectedChar)el.classList.add('selected');else el.classList.remove('selected');
+  });
+}
+document.addEventListener('keydown',e=>{
+  if(G.state==='title'){
+    if(e.code==='ArrowRight'||e.code==='KeyD'){selectedChar=Math.min(2,selectedChar+1);updateCharSelect();e.preventDefault()}
+    if(e.code==='ArrowLeft'||e.code==='KeyA'){selectedChar=Math.max(0,selectedChar-1);updateCharSelect();e.preventDefault()}
+    if(e.code==='Space'||e.code==='Enter'){e.preventDefault();ea();startGame();return}
+  }
+  if((G.state==='victory'||G.state==='dead')&&(e.code==='Space'||e.code==='Enter')){e.preventDefault();restartGame();return}
+  G.keys[e.code]=true;
+});
+document.addEventListener('keyup',e=>{G.keys[e.code]=false});
+
+// --- PARTICLES ---
+class Parts{constructor(m=600){this.p=[];this.m=m}
+  emit(x,y,z,n,c){for(let i=0;i<n&&this.p.length<this.m;i++){const s=c.size||.12;const geo=new THREE.BoxGeometry(s,s,s);const cols=c.colors||[0xffffff];const mat=new THREE.MeshBasicMaterial({color:cols[Math.floor(Math.random()*cols.length)],transparent:true,opacity:1});const mesh=new THREE.Mesh(geo,mat);mesh.position.set(x+(Math.random()-.5)*(c.spread||.5),y+(Math.random()-.5)*(c.spread||.5),z+(Math.random()-.5)*.4);scene.add(mesh);this.p.push({mesh,vx:(Math.random()-.5)*(c.speed||3),vy:Math.random()*(c.speedUp||3)+(c.baseVy||0),vz:(Math.random()-.5)*(c.speed||1)*.3,life:c.life||1,maxLife:c.life||1,gravity:c.gravity!==undefined?c.gravity:-8,shrink:c.shrink!==false,rs:(Math.random()-.5)*10})}}
+  update(dt){for(let i=this.p.length-1;i>=0;i--){const p=this.p[i];p.vy+=p.gravity*dt;p.mesh.position.x+=p.vx*dt;p.mesh.position.y+=p.vy*dt;p.mesh.position.z+=p.vz*dt;p.mesh.rotation.x+=p.rs*dt;p.mesh.rotation.y+=p.rs*dt;p.life-=dt;const r=Math.max(0,p.life/p.maxLife);p.mesh.material.opacity=r;if(p.shrink)p.mesh.scale.setScalar(r);if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();this.p.splice(i,1)}}}
+  clear(){this.p.forEach(p=>{scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose()});this.p=[]}
+}
+const parts=new Parts(800),snowP=new Parts(500);
+function emitSnow(){snowP.emit(camera.position.x+(Math.random()-.5)*30,14,(Math.random()-.5)*10,1,{colors:[0xffffff,0xeef],size:.08+Math.random()*.06,speed:.2,speedUp:0,baseVy:-2-Math.random()*1.5,gravity:-.2,life:5+Math.random()*3,shrink:false,spread:0})}
+function explode(x,y,z,c,n=20){parts.emit(x,y,z,n,{colors:c,size:.12,speed:5,speedUp:4,baseVy:2,gravity:-7,life:.8,spread:.3});screenFlash('#fff',60)}
+function bigExplosion(x,y,z){parts.emit(x,y,z,40,{colors:[0xff4400,0xff8800,0xffcc00,0xff0000,0xffffff],size:.15,speed:8,speedUp:6,baseVy:3,gravity:-5,life:1.2,spread:.5});screenFlash('#ff8800',150);shakeScreen(.5,.4)}
+function shakeScreen(a,d){G.shakeAmt=Math.max(G.shakeAmt,a);G.shakeDur=Math.max(G.shakeDur,d)}
+function toScreen(p){const v=p.clone();v.project(camera);return{x:(v.x+1)/2*W,y:(-v.y+1)/2*H}}
+
+// --- OBJECTS ---
+let player,platforms=[],enemies=[],snowballs=[],enemyBalls=[],collectibles=[],bgObjs=[];
+let bossObj=null,teacherObj=null,schoolSprite=null;
+
+function mp(mesh,x,y,z,cs){mesh.position.set(x,y,z);if(cs)mesh.castShadow=true;return mesh}
+
+// --- PLAYER MODEL ---
+function makeKid(hoodie,cap,skin){
+  const g=new THREE.Group();
+  const headTex=makeTex(16,16,c=>{c.fillStyle=skin;c.fillRect(0,0,16,16);c.fillStyle='#fff';c.fillRect(4,5,3,2);c.fillRect(9,5,3,2);c.fillStyle='#111';c.fillRect(5,5,2,2);c.fillRect(10,5,2,2);c.fillStyle='#622';c.fillRect(6,10,4,1)});
+  const head=new THREE.Mesh(new THREE.BoxGeometry(.45,.45,.45),new THREE.MeshLambertMaterial({map:headTex}));head.position.y=.95;head.castShadow=true;g.add(head);
+  // Backwards cap
+  const capTex=makeTex(8,8,c=>{const r=parseInt(cap.slice(1,3),16),gv=parseInt(cap.slice(3,5),16),b=parseInt(cap.slice(5,7),16);for(let i=0;i<8;i++)for(let j=0;j<8;j++){c.fillStyle=`rgb(${Math.max(0,r-20+Math.random()*40)},${Math.max(0,gv-20+Math.random()*40)},${Math.max(0,b-20+Math.random()*40)})`;c.fillRect(i,j,1,1)}});
+  const capM=new THREE.MeshLambertMaterial({map:capTex});
+  const crown=new THREE.Mesh(new THREE.BoxGeometry(.5,.18,.5),capM);crown.position.y=1.26;g.add(crown);
+  const brim=new THREE.Mesh(new THREE.BoxGeometry(.35,.06,.25),capM);brim.position.set(0,1.15,-.3);g.add(brim);
+  // Body
+  const hTex=makeTex(8,8,c=>{const r=parseInt(hoodie.slice(1,3),16),gv=parseInt(hoodie.slice(3,5),16),b=parseInt(hoodie.slice(5,7),16);for(let i=0;i<8;i++)for(let j=0;j<8;j++){c.fillStyle=`rgb(${Math.max(0,r-15+Math.random()*30)},${Math.max(0,gv-15+Math.random()*30)},${Math.max(0,b-15+Math.random()*30)})`;c.fillRect(i,j,1,1)}c.fillStyle='rgba(0,0,0,.15)';c.fillRect(2,5,4,2)});
+  const bodyM=new THREE.MeshLambertMaterial({map:hTex});
+  const body=new THREE.Mesh(new THREE.BoxGeometry(.45,.55,.3),bodyM);body.position.y=.45;body.castShadow=true;g.add(body);
+  // Scarf
+  g.add(mp(new THREE.Mesh(new THREE.BoxGeometry(.5,.1,.35),new THREE.MeshLambertMaterial({color:0x888888})),0,.72,0));
+  // Arms
+  const aM=new THREE.MeshLambertMaterial({map:hTex});
+  const la=new THREE.Mesh(new THREE.BoxGeometry(.15,.5,.22),aM);la.position.set(-.3,.45,0);la.castShadow=true;g.add(la);
+  const ra=new THREE.Mesh(new THREE.BoxGeometry(.15,.5,.22),aM);ra.position.set(.3,.45,0);ra.castShadow=true;g.add(ra);
+  // Legs
+  const lM=new THREE.MeshLambertMaterial({color:0x222244});
+  const ll=new THREE.Mesh(new THREE.BoxGeometry(.18,.35,.22),lM);ll.position.set(-.1,-.02,0);ll.castShadow=true;g.add(ll);
+  const rl=new THREE.Mesh(new THREE.BoxGeometry(.18,.35,.22),lM);rl.position.set(.1,-.02,0);rl.castShadow=true;g.add(rl);
+  // Shoes
+  const sM=new THREE.MeshLambertMaterial({color:0xeeeeee});
+  g.add(mp(new THREE.Mesh(new THREE.BoxGeometry(.2,.08,.28),sM),-.1,-.22,.03));
+  g.add(mp(new THREE.Mesh(new THREE.BoxGeometry(.2,.08,.28),sM),.1,-.22,.03));
+  return g;
+}
+
+function createPlayer(){
+  const ch=charConfigs[selectedChar];
+  player=makeKid(ch.hoodie,ch.cap,ch.skin);
+  player.position.set(0,GROUND+.8,0);
+  scene.add(player);
+}
+
+// --- BULLY (enemy kid) ---
+function spawnBully(x,y){
+  const cols=[['#22aa44','#cc2222','#d4a574'],['#7733bb','#222222','#c4956a'],['#ee6622','#2244cc','#e0b090']];
+  const c=cols[Math.floor(Math.random()*cols.length)];
+  const g=makeKid(c[0],c[1],c[2]);
+  g.position.set(x,y,0);scene.add(g);
+  enemies.push({mesh:g,x,y,startX:x,vx:1+Math.random()*1.5,hp:1,radius:.45,range:3+Math.random()*2,shootTimer:1.5+Math.random()*2,type:'bully'});
+}
+
+// --- TEACHER ---
+function createTeacher(x,y){
+  const g=new THREE.Group();
+  // Head
+  const headTex=makeTex(16,16,c=>{c.fillStyle='#ddb896';c.fillRect(0,0,16,16);c.fillStyle='#fff';c.fillRect(3,5,3,3);c.fillRect(10,5,3,3);c.fillStyle='#331100';c.fillRect(4,5,2,3);c.fillRect(11,5,2,3);c.fillStyle='#883322';c.fillRect(5,10,6,1);
+    // Glasses
+    c.fillStyle='#333';c.fillRect(2,4,5,1);c.fillRect(9,4,5,1);c.fillRect(7,4,2,1);c.fillRect(2,4,1,4);c.fillRect(6,4,1,4);c.fillRect(9,4,1,4);c.fillRect(13,4,1,4);
+    // Hair
+    c.fillStyle='#553322';c.fillRect(0,0,16,3);for(let i=0;i<16;i++){if(Math.random()>.4)c.fillRect(i,3,1,1)}});
+  const head=new THREE.Mesh(new THREE.BoxGeometry(.5,.5,.5),new THREE.MeshLambertMaterial({map:headTex}));head.position.y=1.2;head.castShadow=true;g.add(head);
+  // Body - brown cardigan
+  const body=new THREE.Mesh(new THREE.BoxGeometry(.55,.7,.35),new THREE.MeshLambertMaterial({color:0x664422}));body.position.y=.55;body.castShadow=true;g.add(body);
+  // Skirt
+  const skirt=new THREE.Mesh(new THREE.BoxGeometry(.6,.3,.4),new THREE.MeshLambertMaterial({color:0x333355}));skirt.position.y=.1;g.add(skirt);
+  // Arms
+  const aM=new THREE.MeshLambertMaterial({color:0x664422});
+  g.add(mp(new THREE.Mesh(new THREE.BoxGeometry(.15,.6,.22),aM),-.35,.55,0,true));
+  g.add(mp(new THREE.Mesh(new THREE.BoxGeometry(.15,.6,.22),aM),.35,.55,0,true));
+  // Pointer stick
+  const stick=new THREE.Mesh(new THREE.BoxGeometry(.04,.8,.04),new THREE.MeshLambertMaterial({color:0x443311}));
+  stick.position.set(.45,.8,.1);stick.rotation.z=-.3;g.add(stick);
+  g.position.set(x,y,0);scene.add(g);
+  teacherObj=g;
+}
+
+// --- SÖREN THE HOCKEY BOSS ---
+function createBoss(x,y){
+  const g=new THREE.Group();
+  // Helmet
+  const helmet=new THREE.Mesh(new THREE.BoxGeometry(.6,.5,.6),new THREE.MeshLambertMaterial({color:0xcc0000}));helmet.position.y=1.2;helmet.castShadow=true;g.add(helmet);
+  // Cage/visor
+  const visor=new THREE.Mesh(new THREE.BoxGeometry(.5,.35,.1),new THREE.MeshLambertMaterial({color:0x888888,transparent:true,opacity:.6}));visor.position.set(0,1.15,.32);g.add(visor);
+  // Eyes behind visor
+  const eyeM=new THREE.MeshBasicMaterial({color:0x111111});
+  g.add(mp(new THREE.Mesh(new THREE.BoxGeometry(.08,.08,.05),eyeM),-.12,1.18,.35));
+  g.add(mp(new THREE.Mesh(new THREE.BoxGeometry(.08,.08,.05),eyeM),.12,1.18,.35));
+  // Jersey (red/white hockey)
+  const jerseyTex=makeTex(16,16,c=>{c.fillStyle='#cc0000';c.fillRect(0,0,16,16);c.fillStyle='#fff';c.fillRect(0,6,16,3);c.fillRect(5,0,6,16);
+    // Number 69
+    c.fillStyle='#FFD700';c.font='bold 6px monospace';c.fillText('69',4,14)});
+  const body=new THREE.Mesh(new THREE.BoxGeometry(.7,.7,.4),new THREE.MeshLambertMaterial({map:jerseyTex}));body.position.y=.55;body.castShadow=true;g.add(body);
+  // Hockey pants
+  const pants=new THREE.Mesh(new THREE.BoxGeometry(.75,.4,.45),new THREE.MeshLambertMaterial({color:0x111111}));pants.position.y=.1;g.add(pants);
+  // Arms with gloves
+  const armM=new THREE.MeshLambertMaterial({color:0xcc0000});
+  g.add(mp(new THREE.Mesh(new THREE.BoxGeometry(.2,.6,.25),armM),-.45,.55,0,true));
+  g.add(mp(new THREE.Mesh(new THREE.BoxGeometry(.2,.6,.25),armM),.45,.55,0,true));
+  // Gloves
+  const gloveM=new THREE.MeshLambertMaterial({color:0x222222});
+  g.add(mp(new THREE.Mesh(new THREE.BoxGeometry(.22,.15,.27),gloveM),-.45,.22,0));
+  g.add(mp(new THREE.Mesh(new THREE.BoxGeometry(.22,.15,.27),gloveM),.45,.22,0));
+  // Skates
+  const skateM=new THREE.MeshLambertMaterial({color:0x111111});
+  g.add(mp(new THREE.Mesh(new THREE.BoxGeometry(.22,.12,.35),skateM),-.15,-.18,.03));
+  g.add(mp(new THREE.Mesh(new THREE.BoxGeometry(.22,.12,.35),skateM),.15,-.18,.03));
+  // Blade
+  const bladeM=new THREE.MeshLambertMaterial({color:0xcccccc});
+  g.add(mp(new THREE.Mesh(new THREE.BoxGeometry(.04,.04,.4),bladeM),-.15,-.28,.03));
+  g.add(mp(new THREE.Mesh(new THREE.BoxGeometry(.04,.04,.4),bladeM),.15,-.28,.03));
+  // Hockey stick
+  const stickM=new THREE.MeshLambertMaterial({color:0x553311});
+  const stick=new THREE.Mesh(new THREE.BoxGeometry(.06,1.2,.06),stickM);stick.position.set(.55,.4,.15);stick.rotation.z=.2;g.add(stick);
+  const blade=new THREE.Mesh(new THREE.BoxGeometry(.3,.08,.06),stickM);blade.position.set(.7,-.15,.15);g.add(blade);
+
+  g.position.set(x,y,0);scene.add(g);
+  bossObj={mesh:g,x,y,hp:G.bossMax,shootTimer:2,moveDir:1,phase:1,actionTimer:2};
+}
+
+// --- TRASH OBJECTS ---
+function spawnTrash(x,y){
+  const types=[[0xaa8833,.3,.2],[0x44aa44,.25,.35],[0xdd4444,.2,.2]]; // brown bag, green wrapper, red can
+  const t=types[Math.floor(Math.random()*types.length)];
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(t[1],t[2],.2),new THREE.MeshLambertMaterial({color:t[0]}));
+  mesh.position.set(x,y,0);mesh.castShadow=true;
+  // Random rotation for messy look
+  mesh.rotation.z=Math.random()*1-0.5;
+  scene.add(mesh);
+  collectibles.push({mesh,x,y,type:'trash',bobTime:Math.random()*6});
+}
+
+// --- HOCKEY PUCK ---
+function spawnPuck(fromX,fromY,toX,toY){
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(.25,.08,.25),new THREE.MeshLambertMaterial({color:0x111111}));
+  mesh.position.set(fromX,fromY,0);scene.add(mesh);
+  const dx=toX-fromX,dy=toY-fromY,dist=Math.sqrt(dx*dx+dy*dy),sp=10+G.bossRound*1.5;
+  enemyBalls.push({mesh,vx:(dx/dist)*sp,vy:(dy/dist)*sp+2,life:4,type:'puck'});
+}
+
+// --- GROUND / WORLD BUILDING ---
+function makeGround(width,floorTex){
+  const bw=1;const count=Math.ceil((width+20)/bw);const sx=-10;
+  for(let i=0;i<count;i++){
+    const geo=new THREE.BoxGeometry(bw,1,3);
+    const mats=blockMatArr(tex.snowSide,floorTex||tex.snow,tex.dirt);
+    const b=new THREE.Mesh(geo,mats);b.position.set(sx+i*bw,GROUND-.5,0);b.receiveShadow=true;b.castShadow=true;scene.add(b);bgObjs.push(b);
+  }
+  for(let l=1;l<3;l++){for(let i=0;i<count;i++){const b=new THREE.Mesh(new THREE.BoxGeometry(bw,1,3),blockMat(tex.dirt));b.position.set(sx+i*bw,GROUND-.5-l,0);scene.add(b);bgObjs.push(b)}}
+  platforms.push({x:sx+count/2,y:GROUND-.5,w:count,h:1});
+}
+
+function makePlatform(x,y,w){
+  const n=Math.max(1,Math.round(w));const g=new THREE.Group();
+  for(let i=0;i<n;i++){const b=new THREE.Mesh(new THREE.BoxGeometry(1,.5,1),blockMatArr(tex.snowSide,tex.snow,tex.stone));b.position.set(i-(n-1)/2,0,0);b.castShadow=true;b.receiveShadow=true;g.add(b)}
+  g.position.set(x,y,0);scene.add(g);
+  platforms.push({x,y,w:n,h:.5,mesh:g});
+}
+
+function makeTrees(n,width){
+  for(let i=0;i<n;i++){
+    const tx=-10+Math.random()*(width+10),tz=-2-Math.random()*5;
+    const tg=new THREE.Group();const th=2+Math.floor(Math.random()*2);
+    for(let ty=0;ty<th;ty++){const trunk=new THREE.Mesh(new THREE.BoxGeometry(.6,1,.6),blockMat(tex.wood));trunk.position.y=ty+.5;trunk.castShadow=true;tg.add(trunk)}
+    const ls=2;for(let lx=-ls;lx<=ls;lx++)for(let ly=0;ly<=ls;ly++)for(let lz=-1;lz<=1;lz++){if(Math.abs(lx)+ly+Math.abs(lz)>ls+1||Math.random()<.15)continue;const leaf=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),blockMat(tex.snowLeaves));leaf.position.set(lx,th+ly,lz);leaf.castShadow=true;tg.add(leaf)}
+    tg.position.set(tx,GROUND,tz);scene.add(tg);bgObjs.push(tg);
+  }
+}
+
+// --- SCHOOL BACKDROP ---
+function loadSchool(){
+  new THREE.TextureLoader().load('school.png',t=>{
+    t.magFilter=THREE.NearestFilter;t.minFilter=THREE.NearestFilter;
+    const a=t.image.width/t.image.height,ph=60,pw=ph*a;
+    schoolSprite=new THREE.Mesh(new THREE.PlaneGeometry(pw,ph),new THREE.MeshBasicMaterial({map:t,transparent:true,opacity:.3,fog:false}));
+    schoolSprite.position.set(0,5,-40);schoolSprite.renderOrder=-1;scene.add(schoolSprite);
+  });
+}
+
+// --- HOCKEY GOAL (for boss level) ---
+let goalObj=null;
+function createGoal(x,y){
+  const g=new THREE.Group();
+  const pipeM=new THREE.MeshLambertMaterial({color:0xdd0000});
+  // Posts
+  g.add(mp(new THREE.Mesh(new THREE.BoxGeometry(.12,2.5,.12),pipeM),-1.8,1.25,0));
+  g.add(mp(new THREE.Mesh(new THREE.BoxGeometry(.12,2.5,.12),pipeM),1.8,1.25,0));
+  // Crossbar
+  g.add(mp(new THREE.Mesh(new THREE.BoxGeometry(3.7,.12,.12),pipeM),0,2.5,0));
+  // Net (semi-transparent)
+  const netM=new THREE.MeshLambertMaterial({color:0xffffff,transparent:true,opacity:.3});
+  g.add(mp(new THREE.Mesh(new THREE.BoxGeometry(3.5,2.4,.05),netM),0,1.25,-.3));
+  g.position.set(x,y,0);scene.add(g);
+  goalObj=g;
+  bgObjs.push(g);
+}
+
+// --- LEVEL BUILDING ---
+function clearLevel(){
+  platforms.forEach(p=>{if(p.mesh)scene.remove(p.mesh)});
+  enemies.forEach(e=>scene.remove(e.mesh));
+  snowballs.forEach(s=>scene.remove(s.mesh));
+  enemyBalls.forEach(s=>scene.remove(s.mesh));
+  collectibles.forEach(c=>scene.remove(c.mesh));
+  bgObjs.forEach(o=>scene.remove(o));
+  if(bossObj){scene.remove(bossObj.mesh);bossObj=null}
+  if(teacherObj){scene.remove(teacherObj);teacherObj=null}
+  goalObj=null;
+  platforms=[];enemies=[];snowballs=[];enemyBalls=[];collectibles=[];bgObjs=[];
+  parts.clear();
+  document.getElementById('boss-bar-container').style.display='none';
+  document.getElementById('timer-container').style.display='none';
+  document.getElementById('trash-display').style.display='none';
+}
+
+function buildLevel(lv){
+  clearLevel();
+  scene.background=new THREE.Color(lv===3?0x1a2a4a:0x7ba4d8);
+  scene.fog=new THREE.Fog(lv===3?0x1a2a4a:0x7ba4d8,25,60);
+  if(schoolSprite){schoolSprite.material.opacity=lv===3?.5:.3}
+
+  if(lv===1){
+    // SNOWBALL FIGHT - outdoor, survive bullies
+    G.levelWidth=30;
+    makeGround(40);makeTrees(8,40);
+    // Platforms for cover
+    makePlatform(-5,GROUND+2,3);makePlatform(3,GROUND+3,2);
+    makePlatform(8,GROUND+2,3);makePlatform(14,GROUND+3.5,2);
+    makePlatform(19,GROUND+2,3);makePlatform(-2,GROUND+5,2);
+    // Spawn bullies
+    for(let i=0;i<5;i++) spawnBully(5+i*4,GROUND+.5);
+    player.position.set(-6,GROUND+.8,0);
+    document.getElementById('level-display').textContent='Nivå 1: Snöbollskriansen';
+  }
+  else if(lv===2){
+    // CLASSROOM - teacher yells, clean trash
+    G.levelWidth=20;
+    makeGround(30,tex.floor);
+    // Classroom walls
+    for(let i=0;i<15;i++){
+      const wall=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),blockMat(tex.plank));
+      wall.position.set(-8+i,GROUND+4.5,-.5);wall.castShadow=true;scene.add(wall);bgObjs.push(wall);
+      const wall2=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),blockMat(tex.plank));
+      wall2.position.set(-8+i,GROUND+5.5,-.5);scene.add(wall2);bgObjs.push(wall2);
+    }
+    // Desks
+    const deskM=new THREE.MeshLambertMaterial({color:0x886633});
+    for(let dx=0;dx<4;dx++){for(let dy=0;dy<2;dy++){
+      const desk=new THREE.Mesh(new THREE.BoxGeometry(1.5,.15,.8),deskM);
+      desk.position.set(-4+dx*4,GROUND+1+dy*2,0);desk.castShadow=true;scene.add(desk);bgObjs.push(desk);
+      // Desk legs
+      for(let lx=-1;lx<=1;lx+=2){const leg=new THREE.Mesh(new THREE.BoxGeometry(.08,.6,.08),deskM);leg.position.set(-4+dx*4+lx*.6,GROUND+.65,0);scene.add(leg);bgObjs.push(leg)}
+    }}
+    // Teacher at front
+    createTeacher(12,GROUND+.5);
+    // No enemies initially - bullies throw trash in rounds
+    player.position.set(-4,GROUND+.8,0);
+    G.classroomRound=0;G.trashCount=0;G.trashCollected=0;G.isCleanPhase=false;
+    document.getElementById('level-display').textContent='Nivå 2: Klassransen';
+    document.getElementById('trash-display').style.display='block';
+    document.getElementById('trash-display').textContent='Skräp: 0/0';
+    // Start first round after delay
+    setTimeout(()=>startClassroomRound(),1500);
+  }
+  else if(lv===3){
+    // BOSS FIGHT - Sören the hockey player
+    G.levelWidth=20;
+    // Ice rink floor
+    makeGround(30,tex.hockeyIce);
+    // Rink boards
+    for(let i=0;i<20;i++){
+      const board=new THREE.Mesh(new THREE.BoxGeometry(1,.8,1),new THREE.MeshLambertMaterial({color:0x224488}));
+      board.position.set(-8+i,GROUND+.4,-1);scene.add(board);bgObjs.push(board);
+    }
+    // Goal behind player
+    createGoal(-5,GROUND+.1);
+    // Boss Sören on the other side
+    createBoss(8,GROUND+.5);
+    G.bossHP=G.bossMax;G.bossRound=0;G.pucksSaved=0;G.pucksGoal=0;
+    player.position.set(-5,GROUND+.8,0);
+    document.getElementById('level-display').textContent='BOSSEN: Sansen';
+    document.getElementById('boss-bar-container').style.display='block';
+    document.getElementById('boss-name').textContent='SANSEN #69';
+    document.getElementById('boss-bar').style.width='100%';
+    showPopup('SANSEN KOMMER!','#ff4444');
+    shakeScreen(.8,.6);
+  }
+}
+
+// --- CLASSROOM LOGIC ---
+function startClassroomRound(){
+  if(G.state!=='playing'||G.level!==2)return;
+  G.classroomRound++;
+  if(G.classroomRound>G.classroomMaxRounds){
+    // Survived classroom! Go to boss
+    showPopup('BRA STÄDAT!','#55ff55');
+    setTimeout(()=>nextLevel(),1500);
+    return;
+  }
+  // Bullies throw trash
+  G.isCleanPhase=false;
+  showPopup(`Omgång ${G.classroomRound}/${G.classroomMaxRounds}`,'#55ffff');
+  const trashN=2+G.classroomRound;
+  setTimeout(()=>{
+    for(let i=0;i<trashN;i++){
+      setTimeout(()=>{
+        const tx=-6+Math.random()*16;
+        const ty=GROUND+1+Math.random()*3;
+        spawnTrash(tx,ty);
+        // Throw animation particle
+        parts.emit(tx,ty+2,0,5,{colors:[0xaa8833,0x44aa44,0xdd4444],size:.08,speed:2,speedUp:1,baseVy:-1,gravity:-3,life:.4,spread:.3});
+      },i*300);
+    }
+    G.trashCount=trashN;G.trashCollected=0;
+    updateTrashDisplay();
+    // After throwing, teacher yells STÄDA!
+    setTimeout(()=>{
+      teacherShout('STÄDA!!!');
+      playWhistle();
+      G.isCleanPhase=true;
+      G.cleanTimer=G.cleanDuration+G.classroomRound*0.5;
+      document.getElementById('timer-container').style.display='block';
+      shakeScreen(.3,.2);
+    },trashN*300+500);
+  },800);
+}
+
+function updateTrashDisplay(){
+  document.getElementById('trash-display').textContent=`Skräp: ${G.trashCollected}/${G.trashCount}`;
+}
+
+// --- PLAYER PHYSICS ---
+function updatePlayer(dt){
+  const speed=6,jumpF=12;
+  if(G.keys['ArrowLeft']||G.keys['KeyA']){G.pvx=-speed;G.facing=-1;player.rotation.y=Math.PI}
+  else if(G.keys['ArrowRight']||G.keys['KeyD']){G.pvx=speed;G.facing=1;player.rotation.y=0}
+  else{G.pvx*=.8;if(Math.abs(G.pvx)<.1)G.pvx=0}
+  if((G.keys['ArrowUp']||G.keys['KeyW'])&&G.onGround){G.pvy=jumpF;G.onGround=false;playJump();parts.emit(player.position.x,player.position.y-.3,0,6,{colors:[0xffffff],size:.08,speed:2,speedUp:1,baseVy:.5,gravity:-3,life:.4,spread:.3})}
+  G.pvy-=25*dt;
+  player.position.x+=G.pvx*dt;player.position.y+=G.pvy*dt;
+  // Limb animation
+  const ws=Math.abs(G.pvx);
+  if(ws>1&&G.onGround){const sw=Math.sin(G.time*12)*.5;[5,6].forEach((i,n)=>{if(player.children[i])player.children[i].rotation.x=n?-sw:sw});[7,8].forEach((i,n)=>{if(player.children[i])player.children[i].rotation.x=n?sw:-sw})}
+  else{[5,6,7,8].forEach(i=>{if(player.children[i])player.children[i].rotation.x*=.8})}
+
+  G.onGround=false;
+  for(const p of platforms){
+    const px=player.position.x,py=player.position.y;
+    const pL=px-.3,pR=px+.3,pB=py-.1,pT=py+1.4;
+    const pl=p.x-p.w/2,pr=p.x+p.w/2,pt=p.y+p.h/2,pb=p.y-p.h/2;
+    if(pR>pl&&pL<pr){
+      if(pB<=pt&&pB>=pt-.5&&G.pvy<0){player.position.y=pt+.1;G.pvy=0;G.onGround=true}
+      else if(pT>=pb&&pT<=pb+.5&&G.pvy>0){G.pvy=0;player.position.y=pb-1.5}
+    }
+    if(py+.5>pb&&pB<pt){
+      if(pR>pl&&pR<pl+.3&&G.pvx>0){player.position.x=pl-.3;G.pvx=0}
+      if(pL<pr&&pL>pr-.3&&G.pvx<0){player.position.x=pr+.3;G.pvx=0}
+    }
+  }
+  if(player.position.y<-15){takeDamage();player.position.set(-5,GROUND+3,0);G.pvx=0;G.pvy=0}
+  // Dust
+  if(G.onGround&&ws>2&&Math.random()<.3)parts.emit(player.position.x-G.facing*.3,player.position.y,0,1,{colors:[0xffffff],size:.06,speed:.5,speedUp:.5,baseVy:.3,gravity:-2,life:.3,spread:.1});
+  // Shoot snowball
+  G.shootCD-=dt;
+  if(G.keys['Space']&&G.shootCD<=0&&G.state==='playing'){
+    if(G.level===3){/* boss level: you move to save, no shooting */}
+    else{shootSnowball();G.shootCD=.3}
+  }
+  // Camera
+  const tcx=player.position.x+G.facing*2;G.camX+=(tcx-G.camX)*3*dt;
+  const tcy=Math.max(2,player.position.y+2);G.camY+=(tcy-G.camY)*3*dt;
+  // Invincibility
+  if(G.invincible){G.invTimer-=dt;player.visible=Math.floor(G.time*12)%2===0;if(G.invTimer<=0){G.invincible=false;player.visible=true}}
+}
+
+function shootSnowball(){
+  playShoot();
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(.2,.2,.2),new THREE.MeshLambertMaterial({color:0xeef,emissive:0x4466aa,emissiveIntensity:.4}));
+  mesh.position.set(player.position.x+G.facing*.5,player.position.y+.7,0);mesh.castShadow=true;scene.add(mesh);
+  snowballs.push({mesh,vx:G.facing*15+G.pvx*.3,vy:1,life:2});
+  parts.emit(mesh.position.x,mesh.position.y,0,4,{colors:[0xffffff,0x88bbff],size:.06,speed:2,speedUp:1,baseVy:0,gravity:-3,life:.2,spread:.1});
+}
+
+function updateSnowballs(dt){
+  for(let i=snowballs.length-1;i>=0;i--){
+    const s=snowballs[i];s.mesh.position.x+=s.vx*dt;s.mesh.position.y+=s.vy*dt;s.vy-=5*dt;s.life-=dt;s.mesh.rotation.x+=8*dt;s.mesh.rotation.y+=6*dt;
+    if(Math.random()<.3)parts.emit(s.mesh.position.x,s.mesh.position.y,0,1,{colors:[0xffffff],size:.04,speed:.3,speedUp:.2,baseVy:0,gravity:-1,life:.15,spread:.03,shrink:true});
+    let hit=false;for(const p of platforms){if(Math.abs(s.mesh.position.x-p.x)<p.w/2&&Math.abs(s.mesh.position.y-p.y)<p.h/2+.15){hit=true;break}}
+    if(s.life<=0||hit){parts.emit(s.mesh.position.x,s.mesh.position.y,0,6,{colors:[0xffffff,0xddddff],size:.06,speed:2,speedUp:1,baseVy:.5,gravity:-5,life:.3,spread:.1});scene.remove(s.mesh);snowballs.splice(i,1)}
+  }
+}
+
+// --- ENEMY UPDATE ---
+function updateEnemies(dt){
+  for(let i=enemies.length-1;i>=0;i--){
+    const e=enemies[i];
+    e.x+=e.vx*dt;if(Math.abs(e.x-e.startX)>e.range)e.vx*=-1;
+    e.mesh.position.x=e.x;e.mesh.position.y=e.y+Math.abs(Math.sin(G.time*6))*.15;
+    e.mesh.rotation.y=e.vx>0?0:Math.PI;
+    // Walk anim
+    const sw=Math.sin(G.time*10)*.5;
+    [5,6].forEach((j,n)=>{if(e.mesh.children[j])e.mesh.children[j].rotation.x=n?-sw:sw});
+    [7,8].forEach((j,n)=>{if(e.mesh.children[j])e.mesh.children[j].rotation.x=n?sw:-sw});
+    // Shoot at player
+    e.shootTimer-=dt;
+    if(e.shootTimer<=0&&Math.abs(e.x-player.position.x)<15){
+      e.shootTimer=2+Math.random()*2;
+      const mesh=new THREE.Mesh(new THREE.BoxGeometry(.15,.15,.15),new THREE.MeshLambertMaterial({color:0xaaccff,emissive:0x4466aa,emissiveIntensity:.5}));
+      mesh.position.set(e.mesh.position.x,e.mesh.position.y+.7,0);scene.add(mesh);
+      const dx=player.position.x-e.mesh.position.x,dy=player.position.y+.5-e.mesh.position.y-.7;
+      const dist=Math.sqrt(dx*dx+dy*dy),sp=7;
+      enemyBalls.push({mesh,vx:(dx/dist)*sp,vy:(dy/dist)*sp+1,life:3,type:'snowball'});
+    }
+    // Hit by player snowball
+    for(let j=snowballs.length-1;j>=0;j--){
+      const s=snowballs[j];
+      if(Math.sqrt((s.mesh.position.x-e.mesh.position.x)**2+(s.mesh.position.y-e.mesh.position.y)**2)<e.radius+.2){
+        e.hp--;scene.remove(s.mesh);snowballs.splice(j,1);
+        if(e.hp<=0){
+          playEnemyDie();explode(e.mesh.position.x,e.mesh.position.y,0,[0x22aa44,0x7733bb,0xee6622,0xffffff],25);
+          scene.remove(e.mesh);enemies.splice(i,1);
+          G.score+=100;updateHUD();
+          const sp=toScreen(e.mesh.position);showScorePop('+100',sp.x,sp.y,'#55ff55');
+        }else{playHit();shakeScreen(.2,.15)}
+        break;
+      }
+    }
+    // Touch player
+    if(enemies[i]){
+      if(Math.sqrt((player.position.x-e.mesh.position.x)**2+(player.position.y-e.mesh.position.y)**2)<e.radius+.4) takeDamage();
+    }
+  }
+  // Check win for level 1
+  if(G.level===1&&enemies.length===0){
+    showPopup('ALLA BUSARNA ÄR BORTA!','#55ff55');
+    G.score+=500;updateHUD();
+    G.state='transition'; // prevent re-trigger
+    setTimeout(()=>nextLevel(),1500);
+  }
+}
+
+// --- ENEMY PROJECTILES ---
+function updateEnemyBalls(dt){
+  for(let i=enemyBalls.length-1;i>=0;i--){
+    const s=enemyBalls[i];
+    s.mesh.position.x+=s.vx*dt;s.mesh.position.y+=s.vy*dt;
+    if(s.type==='snowball')s.vy-=3*dt;
+    s.life-=dt;s.mesh.rotation.x+=8*dt;s.mesh.rotation.y+=6*dt;
+    if(Math.random()<.2)parts.emit(s.mesh.position.x,s.mesh.position.y,0,1,{colors:[s.type==='puck'?0x111111:0x6688ff],size:.04,speed:.2,speedUp:0,baseVy:0,gravity:0,life:.15,spread:.03});
+    // Hit player
+    const d=Math.sqrt((s.mesh.position.x-player.position.x)**2+(s.mesh.position.y-player.position.y-.5)**2);
+    if(d<.5){
+      if(s.type==='puck'){
+        // Check if player is in front of goal (save attempt)
+        if(player.position.x<-3&&player.position.x>-7){
+          // SAVE!
+          playSave();G.pucksSaved++;G.score+=200;
+          showPopup('RÄDDNING!','#55ff55');
+          shakeScreen(.3,.2);
+          parts.emit(s.mesh.position.x,s.mesh.position.y,0,15,{colors:[0x00ff00,0x88ff88,0xffffff],size:.1,speed:4,speedUp:3,baseVy:1,gravity:-5,life:.6,spread:.3});
+          const sp=toScreen(s.mesh.position);showScorePop('+200',sp.x,sp.y,'#00ff88');
+          // Damage boss on save
+          G.bossHP--;
+          document.getElementById('boss-bar').style.width=Math.max(0,G.bossHP/G.bossMax*100)+'%';
+          if(G.bossHP<=0){
+            bigExplosion(bossObj.mesh.position.x,bossObj.mesh.position.y+1,0);
+            setTimeout(()=>bigExplosion(bossObj.mesh.position.x+1,bossObj.mesh.position.y+2,0),200);
+            setTimeout(()=>{scene.remove(bossObj.mesh);bossObj=null;G.score+=2000;updateHUD();showPopup('SANSEN ÄR BESEGRAD!','#55ff55');setTimeout(()=>winGame(),1500)},600);
+          }
+        } else {
+          // GOAL against us
+          playGoal();G.pucksGoal++;
+          takeDamage();
+          showPopup('MÅL!','#ff4444');
+        }
+      } else {
+        takeDamage();
+      }
+      parts.emit(s.mesh.position.x,s.mesh.position.y,0,5,{colors:[0xaaccff,0xffffff],size:.06,speed:2,speedUp:1,baseVy:0,gravity:-3,life:.3,spread:.1});
+      scene.remove(s.mesh);enemyBalls.splice(i,1);continue;
+    }
+    // Puck hits goal (missed save)
+    if(s.type==='puck'&&s.mesh.position.x<-3.5&&Math.abs(s.mesh.position.y-GROUND-1.2)<1.5){
+      playGoal();G.pucksGoal++;
+      showPopup('MÅL!','#ff4444');
+      shakeScreen(.4,.3);screenFlash('#ff0000',150);
+      if(G.pucksGoal>=5){takeDamage();G.pucksGoal=0;showPopup('FÖR MÅNGA MÅL!','#ff0000')}
+      parts.emit(s.mesh.position.x,s.mesh.position.y,0,10,{colors:[0xff0000,0xff4444],size:.08,speed:3,speedUp:2,baseVy:1,gravity:-5,life:.5,spread:.3});
+      scene.remove(s.mesh);enemyBalls.splice(i,1);continue;
+    }
+    if(s.life<=0||s.mesh.position.y<GROUND-2){scene.remove(s.mesh);enemyBalls.splice(i,1)}
+  }
+}
+
+// --- COLLECTIBLES (trash) ---
+function updateCollectibles(dt){
+  for(let i=collectibles.length-1;i>=0;i--){
+    const c=collectibles[i];c.bobTime+=dt;
+    c.mesh.position.y=c.y+Math.sin(c.bobTime*2)*.1;
+    const d=Math.sqrt((player.position.x-c.mesh.position.x)**2+(player.position.y+.3-c.mesh.position.y)**2);
+    if(d<.8){
+      playCollect();
+      parts.emit(c.mesh.position.x,c.mesh.position.y,0,10,{colors:[0xFFD700,0xfff,0x55ff55],size:.08,speed:3,speedUp:3,baseVy:1,gravity:-4,life:.5,spread:.2});
+      G.trashCollected++;G.score+=50;updateHUD();updateTrashDisplay();
+      const sp=toScreen(c.mesh.position);showScorePop('+50',sp.x,sp.y,'#55ff55');
+      scene.remove(c.mesh);collectibles.splice(i,1);
+      // Check if all collected
+      if(G.trashCollected>=G.trashCount&&G.isCleanPhase){
+        G.isCleanPhase=false;
+        document.getElementById('timer-container').style.display='none';
+        showPopup('SNYGGT!','#55ff55');
+        playPowerup();
+        G.score+=200;updateHUD();
+        setTimeout(()=>startClassroomRound(),1500);
+      }
+    }
+  }
+}
+
+// --- CLASSROOM TIMER ---
+function updateClassroom(dt){
+  if(G.level!==2||!G.isCleanPhase)return;
+  G.cleanTimer-=dt;
+  const pct=Math.max(0,G.cleanTimer/G.cleanDuration*100);
+  document.getElementById('timer-bar').style.width=pct+'%';
+  document.getElementById('timer-bar').style.background=pct>50?'linear-gradient(90deg,#0f0,#ff0)':pct>25?'linear-gradient(90deg,#ff0,#f80)':'#f00';
+  if(G.cleanTimer<=0){
+    G.isCleanPhase=false;
+    document.getElementById('timer-container').style.display='none';
+    teacherShout('FÖR LÅNGSAMT!');
+    takeDamage();
+    // Clear remaining trash
+    collectibles.forEach(c=>scene.remove(c.mesh));collectibles=[];
+    setTimeout(()=>startClassroomRound(),1500);
+  }
+  // Teacher arm wave animation
+  if(teacherObj&&teacherObj.children[2]){teacherObj.children[2].rotation.x=Math.sin(G.time*8)*.6}
+}
+
+// --- BOSS UPDATE ---
+function updateBoss(dt){
+  if(!bossObj||G.level!==3)return;
+  const b=bossObj;
+  b.actionTimer-=dt;
+  // Skate back and forth
+  b.mesh.position.x+=b.moveDir*2*dt;
+  if(b.mesh.position.x>14)b.moveDir=-1;
+  if(b.mesh.position.x<2)b.moveDir=1;
+  b.mesh.rotation.y=b.moveDir>0?Math.PI:0;
+  // Stick swing animation
+  const lastChild=b.mesh.children[b.mesh.children.length-2];
+  if(lastChild)lastChild.rotation.z=.2+Math.sin(G.time*3)*.15;
+
+  if(b.actionTimer<=0){
+    b.actionTimer=1.5-G.bossRound*.1;
+    G.bossRound++;
+    // Shoot puck at goal!
+    const targetY=GROUND+.5+Math.random()*2;
+    spawnPuck(b.mesh.position.x-.5,b.mesh.position.y+.5,-5,targetY);
+    playShoot();
+    shakeScreen(.15,.1);
+    // Sometimes shoot multiple
+    if(G.bossRound>5&&Math.random()<.3){
+      setTimeout(()=>spawnPuck(b.mesh.position.x-.5,b.mesh.position.y+.8,-5,GROUND+Math.random()*2.5),300);
+    }
+    if(G.bossRound>10&&Math.random()<.2){
+      setTimeout(()=>spawnPuck(b.mesh.position.x-.5,b.mesh.position.y+.3,-5,GROUND+Math.random()*2),500);
+    }
+  }
+}
+
+// --- DAMAGE ---
+function takeDamage(){
+  if(G.invincible)return;
+  G.lives--;playHit();shakeScreen(.5,.3);screenFlash('#f00',150);
+  G.invincible=true;G.invTimer=2;
+  explode(player.position.x,player.position.y+.5,0,[0xff0000,0xff4444,0xff8888],15);
+  G.pvy=5;G.pvx=-G.facing*4;
+  updateHUD();if(G.lives<=0)gameOver();
+}
+function gameOver(){
+  G.state='dead';music.stop();showPopup('DU DOG!','#ff0000');bigExplosion(player.position.x,player.position.y+.5,0);
+  document.getElementById('hud').style.display='none';document.getElementById('level-display').style.display='none';
+  document.getElementById('boss-bar-container').style.display='none';document.getElementById('timer-container').style.display='none';document.getElementById('trash-display').style.display='none';
+  setTimeout(()=>showPopup('[SPACE] försök igen din nansen','#aaf'),2000);
+}
+function nextLevel(){
+  G.level++;
+  if(G.level>3){winGame();return}
+  G.state='transition';
+  const tr=document.getElementById('level-transition');
+  const titles=['','Snöbollskriansen','Klassransen','BOSSEN: Sansen'];
+  const subs=['','Besegra bussarna med snöbollar!','Städa skräpet innan fröken flippar!','Rädda alla skott från Sansen!'];
+  tr.querySelector('h1').textContent=titles[G.level];tr.querySelector('p').textContent=subs[G.level];
+  tr.querySelector('h1').style.color=G.level===3?'#f55':'#5ff';
+  tr.style.display='flex';
+  setTimeout(()=>{tr.style.display='none';buildLevel(G.level);G.state='playing';updateHUD();music.switchTo(G.level===3?'boss':G.level===2?'classroom':'level')},2500);
+}
+function winGame(){
+  G.state='victory';music.switchTo('victory');playVictory();
+  document.getElementById('hud').style.display='none';document.getElementById('level-display').style.display='none';
+  document.getElementById('boss-bar-container').style.display='none';document.getElementById('timer-container').style.display='none';document.getElementById('trash-display').style.display='none';
+  document.getElementById('victory-overlay').style.display='flex';
+  document.getElementById('final-score').textContent='Totalpoäng: '+G.score+' (nice!)';
+  const fw=setInterval(()=>{if(G.state!=='victory'){clearInterval(fw);return}const fx=(Math.random()-.5)*15,fy=2+Math.random()*6;const c=[[0xff0000,0xff4444],[0x00ff00,0x44ff44],[0x0088ff,0x44aaff],[0xFFD700,0xffee44],[0xff00ff,0xff44ff]][Math.floor(Math.random()*5)];parts.emit(fx,fy,-3,40,{colors:c,size:.12,speed:6,speedUp:6,baseVy:0,gravity:-4,life:1.5,spread:.5});parts.emit(fx,fy,-2,20,{colors:[0xff0000,0x00ff00,0x0000ff,0xFFD700,0xff00ff,0x00ffff],size:.08,speed:4,speedUp:4,baseVy:1,gravity:-2,life:2,spread:.3})},400);
+}
+function updateHUD(){
+  document.getElementById('hearts').textContent='❤️'.repeat(Math.max(0,G.lives))+'🖤'.repeat(Math.max(0,3-G.lives));
+  document.getElementById('score-display').textContent='Poäng: '+G.score;
+}
+
+function startGame(){
+  try{
+  if(G.state!=='title')return;
+  G.keys={};
+  document.getElementById('title-overlay').style.display='none';
+  document.getElementById('hud').style.display='block';document.getElementById('level-display').style.display='block';
+  G.state='playing';G.level=1;G.score=0;G.lives=3;G.invincible=false;
+  createPlayer();buildLevel(1);updateHUD();music.start('level');
+  }catch(err){G.state='title';document.getElementById('err-display').textContent='FEL: '+err.message+' (rad '+err.stack?.match(/:(\d+):/)?.[1]+')';document.getElementById('title-overlay').style.display='flex';}
+}
+function restartGame(){
+  G.keys={};
+  document.getElementById('victory-overlay').style.display='none';
+  clearLevel();if(player){scene.remove(player);player=null}parts.clear();
+  G.state='playing';G.level=1;G.score=0;G.lives=3;G.invincible=false;
+  document.getElementById('hud').style.display='block';document.getElementById('level-display').style.display='block';
+  createPlayer();buildLevel(1);updateHUD();music.start('level');
+}
+
+// --- INIT ---
+loadSchool();drawCharPreviews();
+
+// --- MAIN LOOP ---
+const clock=new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=Math.min(clock.getDelta(),.05);G.dt=dt;G.time+=dt;
+  if(Math.random()<.4)emitSnow();snowP.update(dt);parts.update(dt);
+
+  if(G.state==='playing'&&player){
+    updatePlayer(dt);updateSnowballs(dt);updateEnemies(dt);updateEnemyBalls(dt);updateCollectibles(dt);
+    updateClassroom(dt);updateBoss(dt);
+  }
+
+  let sx=0,sy=0;
+  if(G.shakeDur>0){G.shakeDur-=dt;sx=(Math.random()-.5)*G.shakeAmt*2;sy=(Math.random()-.5)*G.shakeAmt*2;G.shakeAmt*=.95}
+  camera.position.set(G.camX+sx,G.camY+sy,14);camera.lookAt(G.camX,G.camY-1,0);
+  dirL.position.set(G.camX+8,15,10);
+  if(schoolSprite){schoolSprite.position.x=G.camX;schoolSprite.position.y=G.camY-1}
+  renderer.render(scene,camera);
+}
+animate();
+</script>
+</body>
+</html>
