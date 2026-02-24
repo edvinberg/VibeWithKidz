@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Vad gör en programmerare?</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0f0f23;
+            color: #fff;
+            font-family: system-ui, -apple-system, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+        .slide {
+            position: absolute;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem 6rem;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+        .slide.active {
+            display: flex;
+            opacity: 1;
+        }
+        h1 {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #f093fb, #f5576c, #4facfe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        h2 {
+            font-size: 3rem;
+            margin-bottom: 1.2rem;
+            color: #cba6f7;
+        }
+        .subtitle {
+            font-size: 1.5rem;
+            color: #888;
+            margin-bottom: 2rem;
+        }
+        ul {
+            list-style: none;
+            text-align: left;
+            max-width: 900px;
+        }
+        ul li {
+            font-size: 2rem;
+            margin-bottom: 0.8rem;
+            padding: 0.3rem 0;
+        }
+        ul li .emoji { margin-right: 0.5rem; }
+        .big-text {
+            font-size: 2.2rem;
+            line-height: 1.6;
+            max-width: 900px;
+        }
+        .highlight {
+            color: #f9e2af;
+            font-weight: bold;
+        }
+        .green { color: #a6e3a1; }
+        .red { color: #f38ba8; }
+        .blue { color: #89b4fa; }
+        .purple { color: #cba6f7; }
+        .quote {
+            font-size: 2.5rem;
+            font-style: italic;
+            color: #a6e3a1;
+            margin: 1rem 0;
+        }
+        .bold-quote {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: #f9e2af;
+            margin-top: 1.5rem;
+        }
+        .code-block {
+            background: #1e1e2e;
+            border-radius: 16px;
+            padding: 2.5rem 3.5rem;
+            font-family: 'Courier New', monospace;
+            font-size: 2.5rem;
+            text-align: left;
+            margin: 1.5rem 0;
+            box-shadow: 0 0 40px rgba(0,0,0,0.5);
+        }
+        .code-block .keyword { color: #cba6f7; }
+        .code-block .function { color: #f9e2af; }
+        .code-block .comment { color: #6c7086; }
+        .nav-hint {
+            position: fixed;
+            bottom: 20px;
+            right: 30px;
+            font-size: 1rem;
+            color: #444;
+        }
+        .slide-counter {
+            position: fixed;
+            bottom: 20px;
+            left: 30px;
+            font-size: 1rem;
+            color: #444;
+        }
+        .link-btn {
+            display: inline-block;
+            margin-top: 1.5rem;
+            padding: 1rem 2rem;
+            background: #cba6f7;
+            color: #0f0f23;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: transform 0.2s;
+        }
+        .link-btn:hover { transform: scale(1.05); }
+    </style>
+</head>
+<body>
+
+<!-- SLIDE 1: Title -->
+<div class="slide" id="s0">
+    <h1>🖥️ Vad gör en programmerare?</h1>
+    <div class="subtitle">En presentation för er!</div>
+</div>
+
+<!-- SLIDE 2: Intro question -->
+<div class="slide" id="s1">
+    <h2>🤔 Räck upp handen...</h2>
+    <div class="big-text">
+        <span class="highlight">"Räck upp handen om du såg en dator idag!"</span>
+    </div>
+</div>
+
+<!-- SLIDE 3: Kids respond -->
+<div class="slide" id="s2">
+    <h2>Ni kanske tänker...</h2>
+    <ul>
+        <li>"Min iPad!"</li>
+        <li>"Min telefon!"</li>
+        <li>"TV:n!"</li>
+    </ul>
+    <div class="bold-quote">Men ni såg MYCKET fler datorer än ni tror!</div>
+</div>
+
+<!-- SLIDE 4: Computers everywhere -->
+<div class="slide" id="s3">
+    <h2>🌍 Datorer finns ÖVERALLT</h2>
+    <ul>
+        <li><span class="emoji">🚦</span> <strong>Trafikljus</strong> — en dator bestämmer rött och grönt</li>
+        <li><span class="emoji">🧊</span> <strong>Kylskåpet</strong> — en dator kollar om det är kallt nog</li>
+        <li><span class="emoji">🚗</span> <strong>Bilar</strong> — en modern bil har över 100 datorer!</li>
+        <li><span class="emoji">🏫</span> <strong>Skoldörren</strong> — kortet som blipar? Dator.</li>
+        <li><span class="emoji">🎮</span> <strong>Spel</strong> — varje hopp, varje poäng — en dator</li>
+        <li><span class="emoji">📱</span> <strong>Telefonlarmet</strong> — en dator väckte er familj!</li>
+    </ul>
+</div>
+
+<!-- SLIDE 5: What if it goes wrong -->
+<div class="slide" id="s4">
+    <h2>💥 Men om det går FEL?</h2>
+    <ul>
+        <li><span class="emoji">🚦</span> Alla ljus blir GRÖNA samtidigt → <span class="red">💥 Krasch!</span></li>
+        <li><span class="emoji">🧊</span> Kylskåpet slutar kyla → <span class="red">🫠 Maten blir dålig!</span></li>
+        <li><span class="emoji">🛗</span> Hissen vet inte när den ska stanna → <span class="red">Rakt genom taket!</span></li>
+        <li><span class="emoji">🎮</span> Spelkaraktären går genom väggar och faller i tomma intet</li>
+    </ul>
+    <div class="bold-quote">"Någon MÅSTE berätta för datorn vad den ska göra. Varje. Enda. Steg."</div>
+</div>
+
+<!-- SLIDE 6: That's my job -->
+<div class="slide" id="s5">
+    <h2>🦸 Det är DÄR jag kommer in!</h2>
+    <div class="big-text">
+        <p>Jag skriver instruktioner som datorn följer</p>
+        <p style="margin-top:0.8rem">De instruktionerna kallas <span class="purple">kod</span></p>
+        <p style="margin-top:0.8rem">Att skriva dem kallas <span class="purple">kodning</span> eller <span class="purple">programmering</span></p>
+        <p style="margin-top:0.8rem">Jag är en <span class="highlight">programmerare!</span></p>
+    </div>
+    <div class="bold-quote">"Jag är typ datorns lärare. Jag lär den hur den ska bete sig!"</div>
+</div>
+
+<!-- SLIDE 7: How we work -->
+<div class="slide" id="s6">
+    <h2>🤝 Hur jobbar vi?</h2>
+    <div class="big-text">
+        <p>Att koda är inte så svårt när man väl lärt sig.</p>
+        <p style="margin-top:1.2rem">Det svåra är att veta <span class="highlight">VAD vi ska bygga!</span></p>
+        <p style="margin-top:1.2rem">Därför jobbar vi i <span class="purple">grupp</span> — varje dag.</p>
+        <p style="margin-top:1.2rem">Vi pratar, ritar, diskuterar och bestämmer ihop.</p>
+    </div>
+    <div class="bold-quote">Ungefär som när ni gjorde stop motion-filmerna!</div>
+</div>
+
+<!-- SLIDE 8: Let's try it -->
+<div class="slide" id="s7">
+    <h2>🧪 Nu testar VI!</h2>
+    <div class="big-text">
+        <p>Idag tänkte jag vi skulle testa.</p>
+        <p style="margin-top:1.2rem">Men istället för att koda sånt jag gör på jobbet...</p>
+        <p style="margin-top:1.2rem"><span class="highlight">...kan vi prova bygga ett spel! 🎮</span></p>
+    </div>
+</div>
+
+<!-- SLIDE 9: What does code look like -->
+<div class="slide" id="s8">
+    <h2>🧑‍💻 Hur ser kod ut?</h2>
+    <div class="code-block">
+        <span class="comment">// Kattkod 🐱</span><br><br>
+        <span class="keyword">om</span> tryck_på_M:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;katt.<span class="function">mjau()</span>
+    </div>
+    <div class="big-text" style="margin-top:1rem">
+        <span class="green">"OM du trycker M, SÅ jamar katten. Enkelt!"</span>
+    </div>
+</div>
+
+<!-- SLIDE 10: Bridge to game -->
+<div class="slide" id="s9">
+    <h2>🎮 Nu bygger VI ett spel!</h2>
+    <div class="big-text">
+        <p>Att läsa kod är tråkigt...</p>
+        <p style="margin-top:1rem"><span class="highlight">Låt oss BYGGA det istället!</span></p>
+        <p style="margin-top:1rem">Ni bestämmer vad som ska hända — jag kodar det live!</p>
+    </div>
+    <div class="quote" style="margin-top:2rem">🚀 Redo?!</div>
+    <a class="link-btn" href="../katt-spel/">Starta Katt-Spelet! 🐱</a>
+</div>
+
+<div class="slide-counter" id="counter">1 / 10</div>
+<div class="nav-hint">← → piltangenter</div>
+
+<script>
+    const slides = document.querySelectorAll('.slide');
+    const counter = document.getElementById('counter');
+    let current = 0;
+
+    function showSlide(n) {
+        slides[current].classList.remove('active');
+        current = Math.max(0, Math.min(n, slides.length - 1));
+        slides[current].classList.add('active');
+        counter.textContent = `${current + 1} / ${slides.length}`;
+    }
+
+    showSlide(0);
+
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'ArrowRight' || e.code === 'Space') {
+            e.preventDefault();
+            showSlide(current + 1);
+        }
+        if (e.code === 'ArrowLeft') {
+            e.preventDefault();
+            showSlide(current - 1);
+        }
+    });
+
+    // Click to advance
+    document.addEventListener('click', (e) => {
+        if (e.target.tagName === 'A') return;
+        showSlide(current + 1);
+    });
+</script>
+
+</body>
+</html>

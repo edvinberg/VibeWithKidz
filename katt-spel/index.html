@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>🐱 Katt-Spelet!</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #1a1a2e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: 'Courier New', monospace;
+            color: white;
+            overflow: hidden;
+        }
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 0; right: 0;
+            text-align: center;
+            z-index: 10;
+            pointer-events: none;
+        }
+        h1 { font-size: 2.5rem; margin-bottom: 5px; text-shadow: 0 0 20px #cba6f7; }
+        #message {
+            position: absolute;
+            bottom: 30px;
+            left: 0; right: 0;
+            text-align: center;
+            font-size: 1.8rem;
+            color: #a6e3a1;
+            z-index: 10;
+            pointer-events: none;
+            text-shadow: 0 0 10px #a6e3a1;
+        }
+        #mjau-bubble {
+            position: absolute;
+            z-index: 10;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #f9e2af;
+            text-shadow: 0 0 15px #f9e2af;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
+        #teacher-bubble {
+            position: absolute;
+            z-index: 10;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #1a1a2e;
+            background: white;
+            padding: 10px 18px;
+            border-radius: 15px;
+            pointer-events: none;
+            white-space: nowrap;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #teacher-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 20px;
+            border-width: 10px 8px 0;
+            border-style: solid;
+            border-color: white transparent transparent;
+        }
+        #music-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            font-size: 1.5rem;
+            padding: 8px 16px;
+            border: 2px solid #cba6f7;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+        #music-btn:hover { background: rgba(100,50,200,0.5); }
+        .chaser-bubble {
+            position: absolute;
+            z-index: 10;
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: white;
+            background: #cc2222;
+            padding: 6px 14px;
+            border-radius: 12px;
+            pointer-events: none;
+            white-space: nowrap;
+            box-shadow: 0 2px 10px rgba(200,0,0,0.5);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .chaser-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 15px;
+            border-width: 8px 6px 0;
+            border-style: solid;
+            border-color: #cc2222 transparent transparent;
+        }
+        #gameover-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        #gameover-overlay.active { display: flex; }
+        #gameover-flash {
+            position: fixed;
+            inset: 0;
+            background: red;
+            opacity: 0;
+            z-index: 99;
+            pointer-events: none;
+        }
+        #gameover-bg {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: -1;
+        }
+        #gameover-text {
+            font-size: 5rem;
+            font-weight: bold;
+            color: #ff3333;
+            text-shadow: 0 0 40px #ff0000, 0 0 80px #ff0000, 0 0 120px #ff4444, 0 2px 8px #000, 0 0 4px #000;
+            -webkit-text-stroke: 2px #220000;
+            animation: none;
+            text-align: center;
+        }
+        #gameover-sub {
+            font-size: 2rem;
+            color: #f9e2af;
+            text-shadow: 0 0 20px #f9e2af, 0 2px 6px #000, 0 0 4px #000;
+            margin-top: 15px;
+            animation: none;
+        }
+        #gameover-restart {
+            font-size: 1.5rem;
+            color: white;
+            text-shadow: 0 2px 6px #000, 0 0 4px #000;
+            margin-top: 30px;
+            animation: none;
+        }
+        @keyframes slamIn {
+            0% { transform: scale(4) rotate(-10deg); opacity: 0; }
+            50% { transform: scale(1.2) rotate(3deg); opacity: 1; }
+            70% { transform: scale(0.9) rotate(-1deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { text-shadow: 0 0 40px #ff0000, 0 0 80px #ff0000, 0 2px 8px #000; transform: scale(1); }
+            50% { text-shadow: 0 0 60px #ff3333, 0 0 120px #ff0000, 0 0 180px #ff4444, 0 2px 8px #000; transform: scale(1.05); }
+        }
+        @keyframes slideUp {
+            0% { transform: translateY(40px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            z-index: 101;
+            pointer-events: none;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <h1>🐱 Katt-Spelet!</h1>
+    </div>
+    <button id="music-btn">🔇 Musik</button>
+    <div id="message">Piltangenter = gå | MELLANSLAG = hoppa | M = mjau!</div>
+    <div id="mjau-bubble">MJAU!</div>
+    <div id="teacher-bubble"></div>
+    <div class="chaser-bubble" id="chaser-bubble-0"></div>
+    <div class="chaser-bubble" id="chaser-bubble-1"></div>
+    <div id="gameover-flash"></div>
+    <div id="gameover-overlay">
+        <div id="gameover-bg"></div>
+        <div id="gameover-text">🚨 FÅNGAD! 🚨</div>
+        <div id="gameover-sub"></div>
+        <div id="gameover-restart">Tryck R för att spela igen!</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        const messageEl = document.getElementById('message');
+        const mjauBubble = document.getElementById('mjau-bubble');
+        const teacherBubbleEl = document.getElementById('teacher-bubble');
+
+        // === THREE.JS SETUP ===
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xc8d8e8);
+        scene.fog = new THREE.Fog(0xc8d8e8, 40, 120);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // === LIGHTS ===
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        dirLight.position.set(5, 10, 5);
+        dirLight.castShadow = true;
+        dirLight.shadow.camera.left = -20;
+        dirLight.shadow.camera.right = 20;
+        dirLight.shadow.camera.top = 20;
+        dirLight.shadow.camera.bottom = -20;
+        scene.add(dirLight);
+
+        const ARENA = 15;
+
+        // === OUTDOOR GROUND (snow) ===
+        const outdoorGround = new THREE.Mesh(
+            new THREE.PlaneGeometry(500, 500),
+            new THREE.MeshStandardMaterial({ color: 0xeef0f5, roughness: 0.7 })
+        );
+        outdoorGround.rotation.x = -Math.PI / 2;
+        outdoorGround.position.y = -0.01;
+        outdoorGround.receiveShadow = true;
+        scene.add(outdoorGround);
+
+        // === TREES (snowy pines) ===
+        function buildTree(x, z) {
+            const tree = new THREE.Group();
+            // Trunk
+            const trunk = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.3, 0.4, 3, 8),
+                new THREE.MeshStandardMaterial({ color: 0x5c3a1e })
+            );
+            trunk.position.y = 1.5;
+            trunk.castShadow = true;
+            tree.add(trunk);
+            // Snowy pine layers (dark green with snow on top)
+            const pineMat = new THREE.MeshStandardMaterial({ color: 0x1a4a1a });
+            const snowMat = new THREE.MeshStandardMaterial({ color: 0xf0f4ff });
+            [3, 4.2, 5.2].forEach((y, i) => {
+                const r = 2.2 - i * 0.6;
+                const pine = new THREE.Mesh(new THREE.ConeGeometry(r, 1.8, 8), pineMat);
+                pine.position.y = y;
+                pine.castShadow = true;
+                tree.add(pine);
+                // Snow cap on each layer
+                const snowCap = new THREE.Mesh(new THREE.ConeGeometry(r * 0.85, 0.5, 8), snowMat);
+                snowCap.position.y = y + 0.5;
+                tree.add(snowCap);
+            });
+            tree.position.set(x, 0, z);
+            return tree;
+        }
+
+        // Place trees around the classroom
+        const treePositions = [
+            [-25, -25], [-30, 0], [-25, 25], [-35, -15], [-35, 15],
+            [25, -25], [30, 0], [25, 25], [35, -15], [35, 15],
+            [0, -30], [0, 30], [-15, -30], [15, -30], [-15, 30], [15, 30],
+            [-40, -35], [40, 35], [-40, 35], [40, -35],
+            [-50, 0], [50, 0], [0, -50], [0, 50],
+            [-45, -20], [45, 20], [-45, 20], [45, -20],
+        ];
+        treePositions.forEach(([x, z]) => scene.add(buildTree(x, z)));
+
+        // === SNOWDRIFTS ===
+        const snowDriftMat = new THREE.MeshStandardMaterial({ color: 0xf0f4ff, roughness: 0.8 });
+        for (let i = 0; i < 40; i++) {
+            let sx, sz;
+            do {
+                sx = (Math.random() - 0.5) * 120;
+                sz = (Math.random() - 0.5) * 120;
+            } while (Math.abs(sx) < ARENA + 2 && Math.abs(sz) < ARENA + 2);
+            const w = 1 + Math.random() * 2;
+            const h = 0.2 + Math.random() * 0.4;
+            const drift = new THREE.Mesh(new THREE.SphereGeometry(w, 8, 6), snowDriftMat);
+            drift.position.set(sx, h * 0.3, sz);
+            drift.scale.set(1, h / w, 1);
+            scene.add(drift);
+        }
+
+        // === SNOWY ROCKS ===
+        for (let i = 0; i < 15; i++) {
+            let rx, rz;
+            do {
+                rx = (Math.random() - 0.5) * 100;
+                rz = (Math.random() - 0.5) * 100;
+            } while (Math.abs(rx) < ARENA + 2 && Math.abs(rz) < ARENA + 2);
+            const size = 0.3 + Math.random() * 0.8;
+            const rock = new THREE.Mesh(
+                new THREE.DodecahedronGeometry(size, 0),
+                new THREE.MeshStandardMaterial({ color: 0x777788, roughness: 0.9 })
+            );
+            rock.position.set(rx, size * 0.4, rz);
+            rock.rotation.set(Math.random(), Math.random(), Math.random());
+            rock.castShadow = true;
+            scene.add(rock);
+            // Snow on top
+            const snowTop = new THREE.Mesh(
+                new THREE.SphereGeometry(size * 0.7, 6, 4),
+                new THREE.MeshStandardMaterial({ color: 0xf0f4ff })
+            );
+            snowTop.position.set(rx, size * 0.8, rz);
+            snowTop.scale.set(1.2, 0.3, 1.2);
+            scene.add(snowTop);
+        }
+
+        // === FALLING SNOW ===
+        const snowParticles = [];
+        const snowGeo = new THREE.SphereGeometry(0.06, 4, 4);
+        const snowPMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        for (let i = 0; i < 200; i++) {
+            const flake = new THREE.Mesh(snowGeo, snowPMat);
+            flake.position.set(
+                (Math.random() - 0.5) * 100,
+                Math.random() * 30,
+                (Math.random() - 0.5) * 100
+            );
+            scene.add(flake);
+            snowParticles.push(flake);
+        }
+
+        // === CLASSROOM FLOOR ===
+        const groundGeo = new THREE.PlaneGeometry(ARENA * 2, ARENA * 2);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0xc4a882, roughness: 0.9 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = 0.01;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // === WALLS ===
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0xf5f0e8, roughness: 0.8 });
+        const wallH = 4;
+        const backWallH = 8;
+        const walls = [
+            { geo: [ARENA * 2, backWallH, 0.3], pos: [0, backWallH / 2, -ARENA] },
+            { geo: [ARENA * 2, wallH, 0.3], pos: [0, wallH / 2, ARENA] },
+            { geo: [0.3, wallH, ARENA * 2], pos: [-ARENA, wallH / 2, 0] },
+            { geo: [0.3, wallH, ARENA * 2], pos: [ARENA, wallH / 2, 0] },
+        ];
+        walls.forEach(w => {
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(...w.geo), wallMat);
+            mesh.position.set(...w.pos);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+        });
+
+        // === TV on back wall ===
+        const tvFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(8, 4.5, 0.2),
+            new THREE.MeshStandardMaterial({ color: 0x111111 })
+        );
+        tvFrame.position.set(3, 4.5, -ARENA + 0.25);
+        scene.add(tvFrame);
+        const tvScreen = new THREE.Mesh(
+            new THREE.PlaneGeometry(7.4, 4),
+            new THREE.MeshBasicMaterial({ color: 0x2255aa })
+        );
+        tvScreen.position.set(3, 4.5, -ARENA + 0.36);
+        scene.add(tvScreen);
+
+        // === BOOKSHELVES (along side walls) ===
+        const shelfWood = new THREE.MeshStandardMaterial({ color: 0xb8860b, roughness: 0.7 });
+        const bookShelfColors = [0x8b0000, 0x2c3e80, 0x2e7d32, 0xd4a017, 0x6a1b9a, 0xc0392b, 0x1565c0, 0x00695c];
+
+        function buildBookshelf(x, z, rotY) {
+            const shelf = new THREE.Group();
+
+            // Frame
+            const back = new THREE.Mesh(new THREE.BoxGeometry(2.5, 3, 0.1), shelfWood);
+            back.position.set(0, 1.5, -0.25);
+            shelf.add(back);
+            [-1, 1].forEach(s => {
+                const side = new THREE.Mesh(new THREE.BoxGeometry(0.1, 3, 0.5), shelfWood);
+                side.position.set(s * 1.2, 1.5, 0);
+                shelf.add(side);
+            });
+
+            // 3 shelves with books
+            [0.5, 1.5, 2.5].forEach(sy => {
+                const plank = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.08, 0.5), shelfWood);
+                plank.position.set(0, sy, 0);
+                shelf.add(plank);
+
+                // Books on shelf
+                let bx = -1;
+                while (bx < 1) {
+                    const bw = 0.1 + Math.random() * 0.15;
+                    const bh = 0.5 + Math.random() * 0.4;
+                    const color = bookShelfColors[Math.floor(Math.random() * bookShelfColors.length)];
+                    const book = new THREE.Mesh(
+                        new THREE.BoxGeometry(bw, bh, 0.35),
+                        new THREE.MeshStandardMaterial({ color })
+                    );
+                    book.position.set(bx + bw / 2, sy + 0.04 + bh / 2, 0.02);
+                    shelf.add(book);
+                    bx += bw + 0.02;
+                }
+            });
+
+            shelf.position.set(x, 0, z);
+            shelf.rotation.y = rotY;
+            return shelf;
+        }
+
+        // Bookshelves along right wall
+        scene.add(buildBookshelf(ARENA - 0.3, -8, -Math.PI / 2));
+        scene.add(buildBookshelf(ARENA - 0.3, -3, -Math.PI / 2));
+
+        // Bookshelf along back wall (left of TV)
+        scene.add(buildBookshelf(-8, -ARENA + 0.3, 0));
+
+        // Bookshelf along left wall
+        scene.add(buildBookshelf(-ARENA + 0.3, 3, Math.PI / 2));
+
+        // === FURNITURE ===
+        const deskMat = new THREE.MeshStandardMaterial({ color: 0xd4a56a, roughness: 0.6 });
+        const legMat = new THREE.MeshStandardMaterial({ color: 0x555555 });
+        const chairMat = new THREE.MeshStandardMaterial({ color: 0x3a7bd5 });
+
+        // Collision boxes: { x, z, hw, hd, topY } (half-width, half-depth)
+        const platforms = [];
+
+        function buildGroupDesk(x, z) {
+            const group = new THREE.Group();
+            for (let dx = -1; dx <= 1; dx += 2) {
+                for (let dz = -1; dz <= 1; dz += 2) {
+                    // Desk top
+                    const top = new THREE.Mesh(new THREE.BoxGeometry(2, 0.12, 1.4), deskMat);
+                    top.position.set(dx * 1.05, 1.5, dz * 0.75);
+                    top.castShadow = true;
+                    top.receiveShadow = true;
+                    group.add(top);
+                    platforms.push({ x: x + dx * 1.05, z: z + dz * 0.75, hw: 1.0, hd: 0.7, topY: 1.56 });
+                    // 4 legs
+                    [[-0.85, -0.55], [-0.85, 0.55], [0.85, -0.55], [0.85, 0.55]].forEach(([lx, lz]) => {
+                        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.5, 6), legMat);
+                        leg.position.set(dx * 1.05 + lx, 0.75, dz * 0.75 + lz);
+                        group.add(leg);
+                    });
+                    // Chair (on the outside, back facing desk)
+                    const chairGroup = new THREE.Group();
+                    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.08, 0.8), chairMat);
+                    seat.position.y = 0.9;
+                    chairGroup.add(seat);
+                    const back = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.7, 0.08), chairMat);
+                    back.position.set(0, 1.3, 0.36);
+                    chairGroup.add(back);
+                    [[-0.3, -0.3], [-0.3, 0.3], [0.3, -0.3], [0.3, 0.3]].forEach(([cl, cr]) => {
+                        const cleg = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.9, 6), legMat);
+                        cleg.position.set(cl, 0.45, cr);
+                        chairGroup.add(cleg);
+                    });
+                    const chairX = dx * 1.05 + dx * 1.3;
+                    const chairZ = dz * 0.75;
+                    chairGroup.position.set(chairX, 0, chairZ);
+                    chairGroup.rotation.y = dx > 0 ? Math.PI / 2 : -Math.PI / 2;
+                    chairGroup.castShadow = true;
+                    group.add(chairGroup);
+                    platforms.push({ x: x + chairX, z: z + chairZ, hw: 0.5, hd: 0.5, topY: 0.94 });
+                }
+            }
+            group.position.set(x, 0, z);
+            return group;
+        }
+
+        // === BUILD KID ===
+        const skinColors = [0xf5d0a9, 0xd4a76a, 0x8d5524, 0xc68642, 0xf1c27d];
+        const shirtColors = [0xe74c3c, 0x3498db, 0x2ecc71, 0xf39c12, 0x9b59b6, 0xe91e63, 0x1abc9c, 0xff6b6b];
+        const hairColors = [0x2c1b0e, 0x5a3210, 0xd4a56a, 0x8b4513, 0x1a1a1a, 0xc0392b];
+
+        function buildKid() {
+            const kid = new THREE.Group();
+            const skin = skinColors[Math.floor(Math.random() * skinColors.length)];
+            const shirt = shirtColors[Math.floor(Math.random() * shirtColors.length)];
+            const hair = hairColors[Math.floor(Math.random() * hairColors.length)];
+            const skinMat = new THREE.MeshStandardMaterial({ color: skin });
+            const shirtMat = new THREE.MeshStandardMaterial({ color: shirt });
+            const hairMat = new THREE.MeshStandardMaterial({ color: hair });
+
+            // Body (sitting on chair, so starts at seat height)
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.4), shirtMat);
+            body.position.y = 1.2;
+            body.castShadow = true;
+            kid.add(body);
+
+            // Head
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), skinMat);
+            head.position.y = 1.75;
+            head.castShadow = true;
+            kid.add(head);
+            kid.head = head;
+
+            // Hair
+            const hairMesh = new THREE.Mesh(new THREE.SphereGeometry(0.27, 8, 8), hairMat);
+            hairMesh.position.y = 1.82;
+            hairMesh.scale.set(1, 0.7, 1);
+            kid.add(hairMesh);
+
+            // Arms
+            [-1, 1].forEach(s => {
+                const arm = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.45, 0.15), shirtMat);
+                arm.position.set(s * 0.33, 1.15, 0);
+                arm.rotation.x = -0.4;
+                kid.add(arm);
+                // Hand
+                const hand = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 6), skinMat);
+                hand.position.set(s * 0.33, 0.98, -0.15);
+                kid.add(hand);
+            });
+
+            // Legs (under desk)
+            [-1, 1].forEach(s => {
+                const leg = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.5, 0.18), new THREE.MeshStandardMaterial({ color: 0x2c3e50 }));
+                leg.position.set(s * 0.15, 0.55, 0.1);
+                kid.add(leg);
+            });
+
+            return kid;
+        }
+
+        // Place 6 group desks in classroom layout (3x2 grid)
+        const deskPositions = [
+            [-7, -5], [0, -5], [7, -5],
+            [-7, 5], [0, 5], [7, 5],
+        ];
+        const allKids = [];
+        deskPositions.forEach(([x, z]) => {
+            scene.add(buildGroupDesk(x, z));
+            // Add a kid at each chair (4 per group desk)
+            for (let dx = -1; dx <= 1; dx += 2) {
+                for (let dz = -1; dz <= 1; dz += 2) {
+                    const kid = buildKid();
+                    const chairX = x + dx * 1.05 + dx * 1.3;
+                    const chairZ = z + dz * 0.75;
+                    kid.position.set(chairX, 0, chairZ);
+                    kid.rotation.y = dx > 0 ? -Math.PI / 2 : Math.PI / 2;
+                    scene.add(kid);
+                    allKids.push(kid);
+                }
+            }
+        });
+
+        // === TEACHER'S DESK (front-left corner) ===
+        const teacherDesk = new THREE.Group();
+        const tTop = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.15, 1.8), new THREE.MeshStandardMaterial({ color: 0x8b5e3c }));
+        tTop.position.y = 1.6;
+        tTop.castShadow = true;
+        teacherDesk.add(tTop);
+        const tFront = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.4, 0.1), new THREE.MeshStandardMaterial({ color: 0x7a5230 }));
+        tFront.position.set(0, 0.9, 0.85);
+        teacherDesk.add(tFront);
+        [-1, 1].forEach(s => {
+            const side = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.4, 1.8), new THREE.MeshStandardMaterial({ color: 0x7a5230 }));
+            side.position.set(s * 1.7, 0.9, 0);
+            teacherDesk.add(side);
+        });
+        platforms.push({ x: -10, z: -11, hw: 0.9, hd: 1.75, topY: 1.68 });
+
+        // Teacher chair (back faces desk = towards -z)
+        const tChair = new THREE.Group();
+        const tSeat = new THREE.Mesh(new THREE.BoxGeometry(1, 0.1, 1), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+        tSeat.position.y = 1.0;
+        tChair.add(tSeat);
+        const tBack = new THREE.Mesh(new THREE.BoxGeometry(1, 1.0, 0.1), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+        tBack.position.set(0, 1.5, 0.45);
+        tChair.add(tBack);
+        [[-0.4, -0.4], [-0.4, 0.4], [0.4, -0.4], [0.4, 0.4]].forEach(([cl, cr]) => {
+            const cleg = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.0, 6), legMat);
+            cleg.position.set(cl, 0.5, cr);
+            tChair.add(cleg);
+        });
+        tChair.position.set(0, 0, 1.3);
+        teacherDesk.add(tChair);
+        platforms.push({ x: -10 + 1.3, z: -11, hw: 0.5, hd: 0.5, topY: 1.05 });
+
+        // Papers and books on teacher desk
+        const paperMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f0 });
+        const bookColors = [0x2c3e80, 0x8b0000, 0x2e7d32];
+
+        // Stack of papers
+        for (let i = 0; i < 4; i++) {
+            const paper = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.02, 0.6), paperMat);
+            paper.position.set(-0.8, 1.7 + i * 0.025, -0.3);
+            paper.rotation.y = 0.1 * (i - 2);
+            teacherDesk.add(paper);
+        }
+
+        // Books stacked
+        bookColors.forEach((c, i) => {
+            const book = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.12, 0.5), new THREE.MeshStandardMaterial({ color: c }));
+            book.position.set(0.7, 1.73 + i * 0.12, 0.2);
+            book.rotation.y = 0.05;
+            teacherDesk.add(book);
+        });
+
+        // Open book
+        const openL = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.02, 0.7), new THREE.MeshStandardMaterial({ color: 0xf5f0e0 }));
+        openL.position.set(-0.1, 1.69, 0.2);
+        openL.rotation.z = -0.05;
+        teacherDesk.add(openL);
+        const openR = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.02, 0.7), new THREE.MeshStandardMaterial({ color: 0xf5f0e0 }));
+        openR.position.set(0.1, 1.69, 0.2);
+        openR.rotation.z = 0.05;
+        teacherDesk.add(openR);
+        const spine = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.7), new THREE.MeshStandardMaterial({ color: 0x8b0000 }));
+        spine.position.set(0, 1.69, 0.2);
+        teacherDesk.add(spine);
+
+        // Pen
+        const pen = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.5, 6), new THREE.MeshStandardMaterial({ color: 0x1a1a8e }));
+        pen.position.set(-0.4, 1.69, 0.3);
+        pen.rotation.z = Math.PI / 2;
+        pen.rotation.y = 0.3;
+        teacherDesk.add(pen);
+
+        // Coffee mug
+        const mug = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.08, 0.2, 8), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+        mug.position.set(1.2, 1.78, -0.4);
+        teacherDesk.add(mug);
+
+        teacherDesk.position.set(-10, 0, -11);
+        teacherDesk.rotation.y = -Math.PI / 2;
+        scene.add(teacherDesk);
+
+        // === TEACHER (sitting) ===
+        const teacher = new THREE.Group();
+        const teacherSkin = new THREE.MeshStandardMaterial({ color: 0xd4a76a });
+        const teacherTop = new THREE.MeshStandardMaterial({ color: 0x333333 });
+        const teacherBottom = new THREE.MeshStandardMaterial({ color: 0x555555 });
+        const teacherHair = new THREE.MeshStandardMaterial({ color: 0x2c1b0e });
+
+        // Body (sitting on chair)
+        const tBody = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.8, 0.5), teacherTop);
+        tBody.position.y = 1.5;
+        tBody.castShadow = true;
+        teacher.add(tBody);
+
+        // Head
+        const tHead = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 10), teacherSkin);
+        tHead.position.y = 2.2;
+        tHead.castShadow = true;
+        teacher.add(tHead);
+        teacher.head = tHead;
+
+        // Hair (longer)
+        const tHairTop = new THREE.Mesh(new THREE.SphereGeometry(0.33, 10, 10), teacherHair);
+        tHairTop.position.y = 2.3;
+        tHairTop.scale.set(1, 0.8, 1);
+        teacher.add(tHairTop);
+        const tHairBack = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.3), teacherHair);
+        tHairBack.position.set(0, 1.95, -0.15);
+        teacher.add(tHairBack);
+
+        // Eyes
+        const tEyeMat = new THREE.MeshBasicMaterial({ color: 0x1a1a2e });
+        const tEyeL = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), tEyeMat);
+        tEyeL.position.set(0.15, 2.25, 0.25);
+        teacher.add(tEyeL);
+        const tEyeR = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), tEyeMat);
+        tEyeR.position.set(-0.15, 2.25, 0.25);
+        teacher.add(tEyeR);
+
+        // Mouth (open, talking)
+        const tMouth = new THREE.Mesh(
+            new THREE.SphereGeometry(0.08, 8, 8),
+            new THREE.MeshBasicMaterial({ color: 0x8b0000 })
+        );
+        tMouth.position.set(0, 2.08, 0.27);
+        tMouth.scale.set(1, 0.5, 0.5);
+        teacher.add(tMouth);
+        teacher.mouth = tMouth;
+
+        // Arms on desk
+        [-1, 1].forEach(s => {
+            const arm = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.5, 0.18), teacherTop);
+            arm.position.set(s * 0.45, 1.35, 0);
+            arm.rotation.x = -0.4;
+            teacher.add(arm);
+            const hand = new THREE.Mesh(new THREE.SphereGeometry(0.09, 6, 6), teacherSkin);
+            hand.position.set(s * 0.45, 1.15, -0.15);
+            teacher.add(hand);
+        });
+
+        // Legs (sitting)
+        [-1, 1].forEach(s => {
+            const tLeg = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.5, 0.2), teacherBottom);
+            tLeg.position.set(s * 0.18, 0.75, 0.1);
+            teacher.add(tLeg);
+        });
+
+        // Position at teacher's chair
+        teacher.position.set(-11.3, 0, -11);
+        teacher.rotation.y = Math.PI / 2;
+        scene.add(teacher);
+
+
+        // === BUILD CAT ===
+        function buildCat() {
+            const cat = new THREE.Group();
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xf5a623 });
+
+            // Body
+            const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.8, 0.8), bodyMat);
+            body.position.y = 0.8;
+            body.castShadow = true;
+            cat.add(body);
+
+            // Head
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), bodyMat);
+            head.position.set(0.7, 1.3, 0);
+            head.castShadow = true;
+            cat.add(head);
+            cat.head = head;
+
+            // Eyes
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0x1a1a2e });
+            const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), eyeMat);
+            eyeL.position.set(1.05, 1.4, 0.2);
+            cat.add(eyeL);
+            const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), eyeMat);
+            eyeR.position.set(1.05, 1.4, -0.2);
+            cat.add(eyeR);
+            cat.eyeL = eyeL;
+            cat.eyeR = eyeR;
+
+            // Mouth
+            const mouth = new THREE.Mesh(
+                new THREE.SphereGeometry(0.12, 8, 8),
+                new THREE.MeshBasicMaterial({ color: 0xf38ba8 })
+            );
+            mouth.position.set(1.1, 1.15, 0);
+            mouth.scale.set(1, 0.6, 1);
+            mouth.visible = false;
+            cat.add(mouth);
+            cat.mouth = mouth;
+
+            // Ears
+            const earL = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.3, 4), bodyMat);
+            earL.position.set(0.7, 1.8, 0.2);
+            earL.castShadow = true;
+            cat.add(earL);
+            const earR = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.3, 4), bodyMat);
+            earR.position.set(0.7, 1.8, -0.2);
+            earR.castShadow = true;
+            cat.add(earR);
+
+            // Tail
+            const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.04, 1.2, 8), bodyMat);
+            tail.position.set(-0.9, 1.2, 0);
+            tail.rotation.z = Math.PI / 4;
+            cat.add(tail);
+            cat.tail = tail;
+
+            // Legs
+            const legGeo = new THREE.BoxGeometry(0.2, 0.4, 0.2);
+            cat.legs = [
+                [0.4, 0.2, 0.25], [0.4, 0.2, -0.25],
+                [-0.4, 0.2, 0.25], [-0.4, 0.2, -0.25]
+            ].map(p => {
+                const leg = new THREE.Mesh(legGeo, bodyMat);
+                leg.position.set(...p);
+                leg.castShadow = true;
+                cat.add(leg);
+                return leg;
+            });
+
+            return cat;
+        }
+
+        // === SCHOOL BACKGROUND (all walls) ===
+        const textureLoader = new THREE.TextureLoader();
+        textureLoader.load('school.png', (texture) => {
+            const bgH = 15;
+            const bgW = ARENA * 2 + 2;
+            const bgMat = new THREE.MeshBasicMaterial({ map: texture });
+
+            // Back
+            const back = new THREE.Mesh(new THREE.PlaneGeometry(bgW, bgH), bgMat);
+            back.position.set(0, bgH / 2, -ARENA - 0.5);
+            scene.add(back);
+
+            // Front
+            const front = new THREE.Mesh(new THREE.PlaneGeometry(bgW, bgH), bgMat.clone());
+            front.position.set(0, bgH / 2, ARENA + 0.5);
+            front.rotation.y = Math.PI;
+            scene.add(front);
+
+            // Left
+            const left = new THREE.Mesh(new THREE.PlaneGeometry(bgW, bgH), bgMat.clone());
+            left.position.set(-ARENA - 0.5, bgH / 2, 0);
+            left.rotation.y = Math.PI / 2;
+            scene.add(left);
+
+            // Right
+            const right = new THREE.Mesh(new THREE.PlaneGeometry(bgW, bgH), bgMat.clone());
+            right.position.set(ARENA + 0.5, bgH / 2, 0);
+            right.rotation.y = -Math.PI / 2;
+            scene.add(right);
+        });
+
+        const catMesh = buildCat();
+        catMesh.position.set(0, 0, 0);
+        scene.add(catMesh);
+
+        // === GAME STATE ===
+        const katt = { y: 0, vy: 0, grounded: true };
+        const GRAVITY = 0.012;
+        const JUMP_FORCE = 0.25;
+        const MOVE_SPEED = 0.12;
+
+        const keys = {};
+        let mjauFaceTimer = 0;
+        let musicStarted = false;
+        let hasJetpack = false;
+        let jetpackMesh = null;
+        let jetpackFlames = [];
+        let jetpackExtras = [];
+
+        // Jetpack sound
+        function playJetpackSound() {
+            const o = ac.createOscillator(), g = ac.createGain();
+            o.connect(g); g.connect(ac.destination);
+            o.type = 'sawtooth';
+            o.frequency.setValueAtTime(80, ac.currentTime);
+            o.frequency.linearRampToValueAtTime(120, ac.currentTime + 0.1);
+            g.gain.setValueAtTime(0.05, ac.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.15);
+            o.start(); o.stop(ac.currentTime + 0.15);
+        }
+
+        function giveJetpack() {
+            hasJetpack = true;
+            messageEl.textContent = '🚀 JETPACK! Håll MELLANSLAG för att flyga!';
+            messageEl.style.color = '#f9e2af';
+
+            // Superhero outfit
+            const capeMat = new THREE.MeshStandardMaterial({ color: 0xcc0000, side: THREE.DoubleSide });
+
+            // Cape (behind head, under jetpack, flowing back)
+            const cape = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1.4), capeMat);
+            cape.position.set(0.0, 1.4, 0);
+            cape.rotation.x = -Math.PI / 2;
+            catMesh.add(cape);
+            jetpackExtras.push(cape);
+
+            // Face mask (covers face around eyes, like batman)
+            const maskMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+            // Mask band across eyes
+            const maskBand = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.52), maskMat);
+            maskBand.position.set(1.07, 1.42, 0);
+            catMesh.add(maskBand);
+            jetpackExtras.push(maskBand);
+            // Mask covers top of head and ears
+            const maskTop = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.08, 0.52), maskMat);
+            maskTop.position.set(0.85, 1.55, 0);
+            catMesh.add(maskTop);
+            jetpackExtras.push(maskTop);
+            // Pointy ear covers (like batman)
+            [-1, 1].forEach(s => {
+                const earCover = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.25, 4), maskMat);
+                earCover.position.set(0.7, 1.85, s * 0.2);
+                catMesh.add(earCover);
+                jetpackExtras.push(earCover);
+            });
+
+            // Jetpack on top of back
+            jetpackMesh = new THREE.Group();
+            const tank1 = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.7, 8), new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.8 }));
+            tank1.position.set(0, 1.55, -0.2);
+            jetpackMesh.add(tank1);
+            const tank2 = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.7, 8), new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.8 }));
+            tank2.position.set(0, 1.55, 0.2);
+            jetpackMesh.add(tank2);
+            const jpConnector = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 0.55), new THREE.MeshStandardMaterial({ color: 0xcc0000 }));
+            jpConnector.position.set(0, 1.55, 0);
+            jetpackMesh.add(jpConnector);
+
+            // Big flames (shoot down from tanks)
+            [-0.2, 0.2].forEach(fz => {
+                const flame = new THREE.Mesh(
+                    new THREE.ConeGeometry(0.25, 1.5, 8),
+                    new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0.8 })
+                );
+                flame.position.set(0, 0.4, fz);
+                flame.rotation.x = Math.PI;
+                flame.visible = false;
+                jetpackMesh.add(flame);
+                jetpackFlames.push(flame);
+
+                // Inner blue flame
+                const innerFlame = new THREE.Mesh(
+                    new THREE.ConeGeometry(0.12, 0.8, 8),
+                    new THREE.MeshBasicMaterial({ color: 0x4488ff, transparent: true, opacity: 0.9 })
+                );
+                innerFlame.position.set(0, 0.6, fz);
+                innerFlame.rotation.x = Math.PI;
+                innerFlame.visible = false;
+                jetpackMesh.add(innerFlame);
+                jetpackFlames.push(innerFlame);
+            });
+
+            catMesh.add(jetpackMesh);
+
+            // Teacher speech bubble
+            teacherBubbleEl.textContent = 'Varsågod, en jetpack till kissen!';
+            teacherBubbleEl.style.opacity = '1';
+            setTimeout(() => { teacherBubbleEl.style.opacity = '0'; }, 4000);
+        }
+
+        function removeJetpack() {
+            hasJetpack = false;
+            if (jetpackMesh) {
+                catMesh.remove(jetpackMesh);
+                jetpackMesh = null;
+                jetpackFlames = [];
+            }
+            jetpackExtras.forEach(m => catMesh.remove(m));
+            jetpackExtras = [];
+            messageEl.textContent = 'Piltangenter = gå | MELLANSLAG = hoppa | M = mjau!';
+            messageEl.style.color = '#a6e3a1';
+            teacherBubbleEl.textContent = 'Tack, jag tar tillbaka den!';
+            teacherBubbleEl.style.opacity = '1';
+            setTimeout(() => { teacherBubbleEl.style.opacity = '0'; }, 3000);
+        }
+
+        // === FRITIDSLÄRARE (outside, chase the cat) ===
+        function buildChaser(isMale) {
+            const chaser = new THREE.Group();
+            const skin = new THREE.MeshStandardMaterial({ color: 0xd4a76a });
+            const jacketMat = new THREE.MeshStandardMaterial({ color: 0x1a55aa });
+            const pantsMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+
+            // Body (upper)
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.1, 0.5), jacketMat);
+            body.position.y = 1.8;
+            body.castShadow = true;
+            chaser.add(body);
+
+            // Long jacket skirt (extends down over legs)
+            const jacketSkirt = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.7, 0.55), jacketMat);
+            jacketSkirt.position.y = 1.0;
+            chaser.add(jacketSkirt);
+
+            // Head
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 10), skin);
+            head.position.y = 2.7;
+            head.castShadow = true;
+            chaser.add(head);
+
+            // Angry eyebrows
+            const browMat = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
+            [-1, 1].forEach(s => {
+                const brow = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.04, 0.06), browMat);
+                brow.position.set(0.28, 2.82, s * 0.12);
+                brow.rotation.z = s * 0.4;
+                chaser.add(brow);
+            });
+
+            // Eyes
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
+            [-1, 1].forEach(s => {
+                const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), eyeMat);
+                eye.position.set(0.28, 2.75, s * 0.12);
+                chaser.add(eye);
+            });
+
+            // Angry mouth
+            const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.04, 0.15), new THREE.MeshBasicMaterial({ color: 0x8b0000 }));
+            mouth.position.set(0.3, 2.55, 0);
+            chaser.add(mouth);
+
+            // Hair
+            const hairMat = new THREE.MeshStandardMaterial({ color: isMale ? 0x2c1b0e : 0x5a3210 });
+            const hair = new THREE.Mesh(new THREE.SphereGeometry(0.33, 10, 10), hairMat);
+            hair.position.y = 2.8;
+            hair.scale.set(1, 0.7, 1);
+            chaser.add(hair);
+            if (!isMale) {
+                const longHair = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.3), hairMat);
+                longHair.position.set(0, 2.4, -0.15);
+                chaser.add(longHair);
+            }
+
+            // Legs
+            [-1, 1].forEach(s => {
+                const leg = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.8, 0.22), pantsMat);
+                leg.position.set(0, 0.7, s * 0.15);
+                chaser.add(leg);
+            });
+            chaser.legs = chaser.children.slice(-2);
+
+            // Arm holding net (right arm up)
+            const armR = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.7, 0.18), jacketMat);
+            armR.position.set(0, 2.3, 0.4);
+            armR.rotation.x = -0.5;
+            chaser.add(armR);
+            // Other arm
+            const armL = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.6, 0.18), jacketMat);
+            armL.position.set(0, 1.6, -0.35);
+            armL.rotation.x = 0.3;
+            chaser.add(armL);
+
+            // Net (hov) - pole + ring + net bag
+            const netGroup = new THREE.Group();
+            // Long pole
+            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.03, 3, 6), new THREE.MeshStandardMaterial({ color: 0x8b5e3c }));
+            pole.position.set(0, 1.5, 0);
+            netGroup.add(pole);
+            // Ring at top of pole (horizontal)
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.035, 8, 20), new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.5 }));
+            ring.position.set(0, 3, 0);
+            ring.rotation.x = Math.PI / 2;
+            netGroup.add(ring);
+            // Net bag hanging DOWN from ring (cone flipped: open end up, tip down)
+            const netBag = new THREE.Mesh(
+                new THREE.ConeGeometry(0.48, 1.0, 10, 1, true),
+                new THREE.MeshStandardMaterial({ color: 0xeeeeee, transparent: true, opacity: 0.4, side: THREE.DoubleSide, wireframe: true })
+            );
+            netBag.position.set(0, 2.5, 0);
+            netBag.rotation.x = Math.PI; // flip so open end is UP at ring
+            netGroup.add(netBag);
+
+            netGroup.position.set(0.1, 0, 0.4);
+            netGroup.rotation.x = -0.6;
+            chaser.add(netGroup);
+            chaser.netGroup = netGroup;
+            chaser.armR = armR;
+
+            return chaser;
+        }
+
+        const chaserMale = buildChaser(true);
+        chaserMale.position.set(25, 0, 0);
+        scene.add(chaserMale);
+
+        const chaserFemale = buildChaser(false);
+        chaserFemale.position.set(-25, 0, 10);
+        scene.add(chaserFemale);
+
+        chaserMale.speed = 0.09;
+        chaserMale.flank = 1;  // flanks right
+        chaserFemale.speed = 0.07;
+        chaserFemale.flank = -1; // flanks left
+        const chasers = [chaserMale, chaserFemale];
+        let gameOver = false;
+
+        const chaserBubbles = [document.getElementById('chaser-bubble-0'), document.getElementById('chaser-bubble-1')];
+        const sörenShouts = [
+            'KOM HIT DIN KATT!', 'STANNA!', 'JAG FÅR TAG I DIG!',
+            'KISSE KISSE KISSE!', 'NU ÄR DET SLUT!', 'VÄNTA!!!',
+            'JAG ÄR SNABBARE!', 'HALLÅÅÅ!', 'KOM TILLBAKA!',
+            'LUDMILLA, TA HÖGER!', 'JAAAG TAR DEN!', 'DIT KAN DU INTE!',
+        ];
+        const ludmillaShouts = [
+            'DU KOMMER INTE UNDAN!', 'SLUTA SPRING!', 'HIT MED DIG!',
+            'NÄÄÄEJ INTE DIT!', 'FÅNGA KATTEN!', 'SÖREN, SKYNDA!',
+            'JAG SER DIG!', 'NU HAR JAG DIG!', 'HOPPA INTE!',
+            'DEN ÄR MIN!', 'STANNA STILL!', 'KOM IGEN SANSEN!',
+        ];
+        const chaserShouts = [sörenShouts, ludmillaShouts];
+        let chaserShoutTimers = [0, 0];
+
+        const gameoverOverlay = document.getElementById('gameover-overlay');
+        const gameoverFlash = document.getElementById('gameover-flash');
+        const gameoverText = document.getElementById('gameover-text');
+        const gameoverSub = document.getElementById('gameover-sub');
+        const gameoverRestart = document.getElementById('gameover-restart');
+
+        const catchPhrases = [
+            'Sören & Ludmilla fick tag i katten! 🐱',
+            'Fritids vinner denna gång! 💪',
+            'Ingen katt smiter från Sören! 🏃',
+            'Ludmilla: "GOTCHA!" 😼',
+            'Sören svingade håven perfekt! 🥅',
+            'Ludmilla & Sören firar! 🎉',
+        ];
+
+        function triggerGameOver() {
+            gameOver = true;
+
+            // Screen flash
+            gameoverFlash.style.opacity = '0.8';
+            setTimeout(() => { gameoverFlash.style.opacity = '0'; }, 200);
+
+            // Screen shake
+            let shakes = 0;
+            const shakeInterval = setInterval(() => {
+                const sx = (Math.random() - 0.5) * 20;
+                const sy = (Math.random() - 0.5) * 20;
+                renderer.domElement.style.transform = `translate(${sx}px, ${sy}px)`;
+                shakes++;
+                if (shakes > 15) {
+                    clearInterval(shakeInterval);
+                    renderer.domElement.style.transform = '';
+                }
+            }, 30);
+
+            // Show overlay with animations
+            gameoverOverlay.classList.add('active');
+            gameoverText.style.animation = 'slamIn 0.5s ease-out forwards, pulseGlow 1.5s ease-in-out 0.5s infinite';
+            gameoverSub.textContent = catchPhrases[Math.floor(Math.random() * catchPhrases.length)];
+            gameoverSub.style.animation = 'slideUp 0.5s ease-out 0.3s both';
+            gameoverRestart.style.animation = 'slideUp 0.4s ease-out 0.6s both, blink 1s ease-in-out 1s infinite';
+
+            // Confetti / particles burst
+            const confettiColors = ['#ff3333', '#f9e2af', '#a6e3a1', '#89b4fa', '#cba6f7', '#fab387', '#ff6b6b'];
+            for (let i = 0; i < 60; i++) {
+                const c = document.createElement('div');
+                c.className = 'confetti';
+                c.style.background = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+                c.style.left = '50%';
+                c.style.top = '50%';
+                c.style.width = (6 + Math.random() * 10) + 'px';
+                c.style.height = (6 + Math.random() * 10) + 'px';
+                c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                document.body.appendChild(c);
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 3 + Math.random() * 8;
+                const vx = Math.cos(angle) * speed;
+                const vy = Math.sin(angle) * speed - 5;
+                let cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+                let gvy = vy;
+                const animC = () => {
+                    cx += vx;
+                    gvy += 0.15;
+                    cy += gvy;
+                    c.style.left = cx + 'px';
+                    c.style.top = cy + 'px';
+                    c.style.opacity = Math.max(0, 1 - cy / (window.innerHeight * 1.2));
+                    c.style.transform = `rotate(${cx * 3}deg)`;
+                    if (cy < window.innerHeight * 1.3) requestAnimationFrame(animC);
+                    else c.remove();
+                };
+                requestAnimationFrame(animC);
+            }
+
+            // Sound effect — dramatic catch
+            const o1 = ac.createOscillator(), g1 = ac.createGain();
+            o1.connect(g1); g1.connect(ac.destination);
+            o1.type = 'square'; o1.frequency.setValueAtTime(200, ac.currentTime);
+            o1.frequency.linearRampToValueAtTime(80, ac.currentTime + 0.3);
+            g1.gain.setValueAtTime(0.15, ac.currentTime);
+            g1.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.4);
+            o1.start(); o1.stop(ac.currentTime + 0.4);
+
+            // Hide chaser bubbles
+            chaserBubbles.forEach(b => b.style.opacity = '0');
+            messageEl.textContent = '';
+        }
+
+        function resetGame() {
+            gameOver = false;
+            catMesh.position.set(0, 0, 0);
+            katt.y = 0;
+            katt.vy = 0;
+            katt.grounded = true;
+            chaserMale.position.set(25, 0, 0);
+            chaserFemale.position.set(-25, 0, 10);
+            if (hasJetpack) removeJetpack();
+            messageEl.textContent = 'Piltangenter = gå | MELLANSLAG = hoppa | M = mjau!';
+            messageEl.style.color = '#a6e3a1';
+            gameoverOverlay.classList.remove('active');
+            gameoverText.style.animation = 'none';
+            gameoverSub.style.animation = 'none';
+            gameoverRestart.style.animation = 'none';
+            chaserShoutTimers = [0, 0];
+        }
+
+        // === LJUD ===
+        const mjauSound = new Audio('mjau.mp3');
+        function playMjau() {
+            mjauSound.currentTime = 0;
+            mjauSound.play();
+        }
+
+        // === MUSIK ===
+        const ac = new (window.AudioContext || window.webkitAudioContext)();
+        const music = {
+            playing: false, timer: null, step: 0, nodes: [],
+            nf: {'C3':131,'D3':147,'E3':165,'F3':175,'G3':196,'A3':220,'B3':247,'C4':262,'D4':294,'E4':330,'F4':349,'G4':392,'A4':440,'B4':494,'C5':523,'D5':587,'E5':659,'F5':698,'G5':784,'A5':880,'_':0},
+            mel: ['E4','E4','_','E4','_','C4','E4','_','G4','_','_','_','G3','_','_','_','C4','_','_','G3','_','_','E3','_','_','A3','_','B3','_','A3','G3','_','E4','_','G4','A4','_','F4','G4','_','E4','_','C4','D4','B3','_','_','_'],
+            bas: ['C3','_','C3','_','C3','_','C3','_','G3','_','G3','_','G3','_','G3','_','C3','_','_','G3','_','_','C3','_','_','F3','_','F3','_','F3','G3','_','A3','_','A3','_','F3','_','F3','_','C3','_','C3','_','G3','_','G3','_'],
+            arp: ['C5','E5','G5','C5','E5','G5','C5','E5','B4','D5','G5','B4','D5','G5','B4','D5','C5','E5','G5','E5','B4','D5','G5','D5','A4','C5','E5','A4','C5','F5','A5','F5','A4','C5','E5','C5','F4','A4','C5','A4','E4','G4','C5','E4','G4','B4','D5','G4'],
+            pn(freq, type, vol, dur) {
+                if (!freq) return;
+                const o = ac.createOscillator(), g = ac.createGain();
+                o.connect(g); g.connect(ac.destination);
+                o.type = type;
+                o.frequency.setValueAtTime(freq, ac.currentTime);
+                g.gain.setValueAtTime(vol, ac.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + dur * 0.9);
+                o.start(); o.stop(ac.currentTime + dur);
+                this.nodes.push(o);
+                o.onended = () => { const i = this.nodes.indexOf(o); if (i >= 0) this.nodes.splice(i, 1); };
+            },
+            start() {
+                if (this.playing) return;
+                this.playing = true; this.step = 0;
+                const bpm = 140, sd = 60 / bpm / 2;
+                const tick = () => {
+                    if (!this.playing) return;
+                    const m = this.mel[this.step % this.mel.length];
+                    const b = this.bas[this.step % this.bas.length];
+                    const a = this.arp[this.step % this.arp.length];
+                    if (m !== '_') this.pn(this.nf[m], 'square', 0.06, sd * 1.8);
+                    if (b !== '_') this.pn(this.nf[b] * 0.5, 'sawtooth', 0.04, sd * 1.5);
+                    if (a !== '_') this.pn(this.nf[a], 'square', 0.02, sd * 0.6);
+                    this.step++;
+                    this.timer = setTimeout(tick, sd * 1000);
+                };
+                tick();
+            },
+            stop() {
+                this.playing = false;
+                if (this.timer) { clearTimeout(this.timer); this.timer = null; }
+                this.nodes.forEach(o => { try { o.stop(); } catch(e) {} });
+                this.nodes = [];
+            }
+        };
+
+        // === INPUT ===
+        document.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            if (e.code === 'Space') {
+                e.preventDefault();
+                ac.resume();
+                if (!gameOver && !hasJetpack && katt.grounded) {
+                    katt.vy = JUMP_FORCE;
+                    katt.grounded = false;
+                }
+            }
+            if (e.code === 'KeyR' && gameOver) {
+                resetGame();
+            }
+            if (e.code === 'KeyM') {
+                ac.resume();
+                if (gameOver) return;
+                playMjau();
+                mjauFaceTimer = 30;
+                // Easter egg: meow near teacher
+                const dist = catMesh.position.distanceTo(teacher.position);
+                if (dist < 3) {
+                    if (!hasJetpack) {
+                        giveJetpack();
+                    } else {
+                        removeJetpack();
+                    }
+                }
+            }
+            if (e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+                e.preventDefault();
+                ac.resume();
+            }
+        });
+        document.addEventListener('keyup', (e) => { keys[e.code] = false; });
+        window.addEventListener('blur', () => { Object.keys(keys).forEach(k => keys[k] = false); });
+
+        // Music toggle button
+        const musicBtn = document.getElementById('music-btn');
+        let musicOn = false;
+        musicBtn.addEventListener('click', () => {
+            ac.resume();
+            if (musicOn) {
+                music.stop();
+                musicOn = false;
+                musicBtn.textContent = '🔇 Musik';
+            } else {
+                music.start();
+                musicOn = true;
+                musicBtn.textContent = '🔊 Musik';
+            }
+        });
+
+        // === GAME LOOP ===
+        let time = 0;
+        let isMoving = false;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.02;
+
+            // Movement (frozen when game over)
+            let dx = 0, dz = 0;
+            if (!gameOver) {
+                if (keys['ArrowLeft']) dx -= MOVE_SPEED;
+                if (keys['ArrowRight']) dx += MOVE_SPEED;
+                if (keys['ArrowUp']) dz -= MOVE_SPEED;
+                if (keys['ArrowDown']) dz += MOVE_SPEED;
+            }
+
+            isMoving = dx !== 0 || dz !== 0;
+
+            let newX = catMesh.position.x + dx;
+            let newZ = catMesh.position.z + dz;
+            const oldX = catMesh.position.x;
+            const oldZ = catMesh.position.z;
+
+            // Wall collision — only block where walls actually exist
+            const wt = 1.0;
+            // Left/Right walls only exist along z = -ARENA to +ARENA
+            if (katt.y < wallH && newZ > -ARENA - wt && newZ < ARENA + wt) {
+                if ((oldX > -ARENA + wt && newX <= -ARENA + wt) || (oldX < -ARENA - wt && newX >= -ARENA - wt)) newX = oldX;
+                if ((oldX < ARENA - wt && newX >= ARENA - wt) || (oldX > ARENA + wt && newX <= ARENA + wt)) newX = oldX;
+            }
+            // Back wall only exists along x = -ARENA to +ARENA
+            if (katt.y < backWallH && newX > -ARENA - wt && newX < ARENA + wt) {
+                if ((oldZ > -ARENA + wt && newZ <= -ARENA + wt) || (oldZ < -ARENA - wt && newZ >= -ARENA - wt)) newZ = oldZ;
+            }
+            // Front wall only exists along x = -ARENA to +ARENA
+            if (katt.y < wallH && newX > -ARENA - wt && newX < ARENA + wt) {
+                if ((oldZ < ARENA - wt && newZ >= ARENA - wt) || (oldZ > ARENA + wt && newZ <= ARENA + wt)) newZ = oldZ;
+            }
+
+            catMesh.position.x = newX;
+            catMesh.position.z = newZ;
+
+            // Face direction
+            if (dx > 0) catMesh.rotation.y = 0;
+            if (dx < 0) catMesh.rotation.y = Math.PI;
+            if (dz > 0) catMesh.rotation.y = -Math.PI / 2;
+            if (dz < 0) catMesh.rotation.y = Math.PI / 2;
+            if (dx > 0 && dz > 0) catMesh.rotation.y = -Math.PI / 4;
+            if (dx > 0 && dz < 0) catMesh.rotation.y = Math.PI / 4;
+            if (dx < 0 && dz > 0) catMesh.rotation.y = -Math.PI * 3 / 4;
+            if (dx < 0 && dz < 0) catMesh.rotation.y = Math.PI * 3 / 4;
+
+            // Jetpack or normal physics
+            if (hasJetpack) {
+                const jetting = keys['Space'];
+                if (jetting) {
+                    katt.vy += 0.02;
+                    if (katt.vy > 0.2) katt.vy = 0.2;
+                    if (Math.random() > 0.7) playJetpackSound();
+                } else {
+                    katt.vy -= GRAVITY;
+                }
+                katt.y += katt.vy;
+                if (katt.y < 0) { katt.y = 0; katt.vy = 0; katt.grounded = true; }
+                else { katt.grounded = false; }
+
+                // Flames
+                jetpackFlames.forEach(f => {
+                    f.visible = jetting;
+                    if (jetting) {
+                        f.scale.y = 0.8 + Math.random() * 0.6;
+                        f.material.opacity = 0.5 + Math.random() * 0.4;
+                    }
+                });
+            } else {
+                katt.vy -= GRAVITY;
+                katt.y += katt.vy;
+
+                // Land on platforms (desks/chairs)
+                let landY = 0;
+                const cx = catMesh.position.x;
+                const cz = catMesh.position.z;
+                for (const p of platforms) {
+                    if (Math.abs(cx - p.x) < p.hw && Math.abs(cz - p.z) < p.hd) {
+                        if (katt.y <= p.topY && katt.y + katt.vy <= p.topY && p.topY > landY) {
+                            landY = p.topY;
+                        }
+                    }
+                }
+                if (katt.y <= landY) {
+                    katt.y = landY;
+                    katt.vy = 0;
+                    katt.grounded = true;
+                }
+            }
+            catMesh.position.y = katt.y;
+
+            // Cat animations
+            catMesh.tail.rotation.z = Math.PI / 4 + Math.sin(time * 8) * 0.3;
+            if (isMoving) {
+                catMesh.legs.forEach((leg, i) => {
+                    leg.position.y = 0.2 + Math.sin(time * 15 + i * Math.PI) * 0.08;
+                });
+            }
+
+            // Mjau face
+            if (mjauFaceTimer > 0) {
+                mjauFaceTimer--;
+                catMesh.mouth.visible = true;
+                catMesh.eyeL.scale.set(1.5, 1.5, 1.5);
+                catMesh.eyeR.scale.set(1.5, 1.5, 1.5);
+                const catScreen = catMesh.position.clone();
+                catScreen.y += 2.5;
+                catScreen.project(camera);
+                mjauBubble.style.left = ((catScreen.x + 1) / 2 * window.innerWidth) + 'px';
+                mjauBubble.style.top = ((-catScreen.y + 1) / 2 * window.innerHeight) + 'px';
+                mjauBubble.style.opacity = '1';
+            } else {
+                catMesh.mouth.visible = false;
+                catMesh.eyeL.scale.set(1, 1, 1);
+                catMesh.eyeR.scale.set(1, 1, 1);
+                mjauBubble.style.opacity = '0';
+            }
+
+            // Camera follows cat
+            camera.position.x += (catMesh.position.x - camera.position.x) * 0.05;
+            camera.position.z += (catMesh.position.z + 10 - camera.position.z) * 0.05;
+            const camTargetY = hasJetpack ? catMesh.position.y + 5 : 5;
+            camera.position.y += (camTargetY - camera.position.y) * 0.05 + Math.sin(time) * 0.1;
+            camera.lookAt(catMesh.position.x, catMesh.position.y + 1, catMesh.position.z);
+
+            // Light follows cat
+            dirLight.position.set(catMesh.position.x + 5, 10, catMesh.position.z + 5);
+            dirLight.target.position.copy(catMesh.position);
+
+            // Teacher animate
+            teacher.head.rotation.z = Math.sin(time * 1.2) * 0.1;
+
+            // Teacher bubble position
+            const tScreen = teacher.position.clone();
+            tScreen.y += 3;
+            tScreen.project(camera);
+            teacherBubbleEl.style.left = ((tScreen.x + 1) / 2 * window.innerWidth - 100) + 'px';
+            teacherBubbleEl.style.top = ((-tScreen.y + 1) / 2 * window.innerHeight) + 'px';
+
+            // Kids animate (reading/writing)
+            allKids.forEach((kid, i) => {
+                kid.head.rotation.x = Math.sin(time * 1.5 + i * 2) * 0.15 - 0.2;
+                kid.head.rotation.z = Math.sin(time * 0.8 + i * 3) * 0.1;
+            });
+
+            // === CHASERS AI ===
+            const catOutside = Math.abs(catMesh.position.x) > ARENA + 1 || Math.abs(catMesh.position.z) > ARENA + 1;
+
+            if (!gameOver) {
+                chasers.forEach((ch, ci) => {
+                    const dirX = catMesh.position.x - ch.position.x;
+                    const dirZ = catMesh.position.z - ch.position.z;
+                    const dist = Math.sqrt(dirX * dirX + dirZ * dirZ);
+
+                    if (catOutside) {
+                        if (dist > 0.5) {
+                            let tx = dirX, tz = dirZ;
+                            if (dist > 5) {
+                                const perpX = -dirZ / dist * ch.flank * 4;
+                                const perpZ = dirX / dist * ch.flank * 4;
+                                tx += perpX;
+                                tz += perpZ;
+                            }
+                            const tDist = Math.sqrt(tx * tx + tz * tz);
+                            const oldCX = ch.position.x;
+                            const oldCZ = ch.position.z;
+                            let newCX = oldCX + (tx / tDist) * ch.speed;
+                            let newCZ = oldCZ + (tz / tDist) * ch.speed;
+
+                            // Wall collision for chasers
+                            const cw = 1.0;
+                            if (newCZ > -ARENA - cw && newCZ < ARENA + cw) {
+                                if ((oldCX > -ARENA + cw && newCX <= -ARENA + cw) || (oldCX < -ARENA - cw && newCX >= -ARENA - cw)) newCX = oldCX;
+                                if ((oldCX < ARENA - cw && newCX >= ARENA - cw) || (oldCX > ARENA + cw && newCX <= ARENA + cw)) newCX = oldCX;
+                            }
+                            if (newCX > -ARENA - cw && newCX < ARENA + cw) {
+                                if ((oldCZ > -ARENA + cw && newCZ <= -ARENA + cw) || (oldCZ < -ARENA - cw && newCZ >= -ARENA - cw)) newCZ = oldCZ;
+                                if ((oldCZ < ARENA - cw && newCZ >= ARENA - cw) || (oldCZ > ARENA + cw && newCZ <= ARENA + cw)) newCZ = oldCZ;
+                            }
+
+                            ch.position.x = newCX;
+                            ch.position.z = newCZ;
+                            ch.rotation.y = Math.atan2(tx, tz);
+
+                            const legSpeed = 18 + ci * 4;
+                            ch.legs[0].position.z = 0.15 + Math.sin(time * legSpeed) * 0.25;
+                            ch.legs[1].position.z = -0.15 + Math.sin(time * legSpeed + Math.PI) * 0.25;
+                        }
+
+                        // Push apart
+                        const other = chasers[1 - ci];
+                        const sepX = ch.position.x - other.position.x;
+                        const sepZ = ch.position.z - other.position.z;
+                        const sepDist = Math.sqrt(sepX * sepX + sepZ * sepZ);
+                        if (sepDist < 3 && sepDist > 0.01) {
+                            ch.position.x += (sepX / sepDist) * 0.04;
+                            ch.position.z += (sepZ / sepDist) * 0.04;
+                        }
+
+                        // Shout while chasing!
+                        chaserShoutTimers[ci]--;
+                        if (chaserShoutTimers[ci] <= 0) {
+                            const shouts = chaserShouts[ci];
+                            chaserBubbles[ci].textContent = shouts[Math.floor(Math.random() * shouts.length)];
+                            chaserBubbles[ci].style.opacity = '1';
+                            chaserShoutTimers[ci] = 80 + Math.floor(Math.random() * 120);
+                            setTimeout(() => { chaserBubbles[ci].style.opacity = '0'; }, 1500);
+                        }
+                        // Position bubble above chaser
+                        const chScreen = ch.position.clone();
+                        chScreen.y += 3.5;
+                        chScreen.project(camera);
+                        chaserBubbles[ci].style.left = ((chScreen.x + 1) / 2 * window.innerWidth - 60) + 'px';
+                        chaserBubbles[ci].style.top = ((-chScreen.y + 1) / 2 * window.innerHeight) + 'px';
+
+                        // Swing net when close!
+                        if (dist < 4) {
+                            const swingAngle = Math.sin(time * (10 + ci * 3)) * 1.2 - 0.5;
+                            ch.netGroup.rotation.x = swingAngle;
+                            ch.armR.rotation.x = swingAngle * 0.6;
+                        } else {
+                            ch.netGroup.rotation.x = -0.8;
+                            ch.armR.rotation.x = -0.5;
+                        }
+
+                        // Collision — net slams down on cat!
+                        if (dist < 1.8 && katt.y < 2.5) {
+                            ch.netGroup.rotation.x = 1.2;
+                            ch.armR.rotation.x = 0.8;
+                            triggerGameOver();
+                        }
+                    } else {
+                        ch.netGroup.rotation.x = -0.8;
+                        ch.armR.rotation.x = -0.5;
+                        chaserBubbles[ci].style.opacity = '0';
+                    }
+                });
+            }
+
+            // Game over — wait for restart
+            if (gameOver) {
+                if (keys['KeyR']) {
+                    resetGame();
+                    chasers.forEach(ch => {
+                        ch.netGroup.rotation.x = -0.8;
+                        ch.armR.rotation.x = -0.5;
+                    });
+                }
+            }
+
+            // Falling snow
+            snowParticles.forEach(flake => {
+                flake.position.y -= 0.03 + Math.sin(flake.position.x) * 0.01;
+                flake.position.x += Math.sin(time + flake.position.z) * 0.01;
+                if (flake.position.y < 0) {
+                    flake.position.y = 25 + Math.random() * 5;
+                    flake.position.x = catMesh.position.x + (Math.random() - 0.5) * 80;
+                    flake.position.z = catMesh.position.z + (Math.random() - 0.5) * 80;
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
