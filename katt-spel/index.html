@@ -206,14 +206,46 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
+        // ============================================
+        // INSTÄLLNINGAR - Ändra här!
+        // ============================================
+        const CONFIG = {
+            // -- KATTEN --
+            hastighet: 0.12,        // Hur snabbt katten går
+            hoppkraft: 0.25,        // Hur högt katten hoppar
+            gravitation: 0.012,     // Hur snabbt man faller ner
+            kattFarg: 0xf5a623,     // Kattens färg (orange)
+
+            // -- JETPACK --
+            jetpackKraft: 0.02,     // Hur snabbt jetpacken lyfter
+            jetpackMaxFart: 0.2,    // Max hastighet uppåt med jetpack
+
+            // -- JÄGARNA (Sören & Ludmilla) --
+            sorenFart: 0.09,        // Sörens hastighet
+            ludmillaFart: 0.07,     // Ludmillas hastighet
+            fangstAvstand: 1.8,     // Hur nära de måste vara för att fånga
+
+            // -- VÄRLDEN --
+            markFarg: 0xc4a882,     // Klassrummets golv-färg
+            snoFarg: 0xeef0f5,      // Snöns färg utomhus
+            vaggFarg: 0xf5f0e8,     // Väggarnas färg
+            himmelFarg: 0xc8d8e8,   // Himmel/bakgrundsfärg
+            antalSnoflingor: 200,   // Antal snöflingor
+
+            // -- KLASSRUMMET --
+            arenaStorlek: 15,       // Klassrummets storlek
+            vaggHojd: 4,            // Väggarnas höjd
+            bakvaggHojd: 8,         // Bakväggens höjd
+        };
+
         const messageEl = document.getElementById('message');
         const mjauBubble = document.getElementById('mjau-bubble');
         const teacherBubbleEl = document.getElementById('teacher-bubble');
 
         // === THREE.JS SETUP ===
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xc8d8e8);
-        scene.fog = new THREE.Fog(0xc8d8e8, 40, 120);
+        scene.background = new THREE.Color(CONFIG.himmelFarg);
+        scene.fog = new THREE.Fog(CONFIG.himmelFarg, 40, 120);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -239,12 +271,12 @@
         dirLight.shadow.camera.bottom = -20;
         scene.add(dirLight);
 
-        const ARENA = 15;
+        const ARENA = CONFIG.arenaStorlek;
 
         // === OUTDOOR GROUND (snow) ===
         const outdoorGround = new THREE.Mesh(
             new THREE.PlaneGeometry(500, 500),
-            new THREE.MeshStandardMaterial({ color: 0xeef0f5, roughness: 0.7 })
+            new THREE.MeshStandardMaterial({ color: CONFIG.snoFarg, roughness: 0.7 })
         );
         outdoorGround.rotation.x = -Math.PI / 2;
         outdoorGround.position.y = -0.01;
@@ -337,7 +369,7 @@
         const snowParticles = [];
         const snowGeo = new THREE.SphereGeometry(0.06, 4, 4);
         const snowPMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        for (let i = 0; i < 200; i++) {
+        for (let i = 0; i < CONFIG.antalSnoflingor; i++) {
             const flake = new THREE.Mesh(snowGeo, snowPMat);
             flake.position.set(
                 (Math.random() - 0.5) * 100,
@@ -350,7 +382,7 @@
 
         // === CLASSROOM FLOOR ===
         const groundGeo = new THREE.PlaneGeometry(ARENA * 2, ARENA * 2);
-        const groundMat = new THREE.MeshStandardMaterial({ color: 0xc4a882, roughness: 0.9 });
+        const groundMat = new THREE.MeshStandardMaterial({ color: CONFIG.markFarg, roughness: 0.9 });
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = -Math.PI / 2;
         ground.position.y = 0.01;
@@ -358,9 +390,9 @@
         scene.add(ground);
 
         // === WALLS ===
-        const wallMat = new THREE.MeshStandardMaterial({ color: 0xf5f0e8, roughness: 0.8 });
-        const wallH = 4;
-        const backWallH = 8;
+        const wallMat = new THREE.MeshStandardMaterial({ color: CONFIG.vaggFarg, roughness: 0.8 });
+        const wallH = CONFIG.vaggHojd;
+        const backWallH = CONFIG.bakvaggHojd;
         const walls = [
             { geo: [ARENA * 2, backWallH, 0.3], pos: [0, backWallH / 2, -ARENA] },
             { geo: [ARENA * 2, wallH, 0.3], pos: [0, wallH / 2, ARENA] },
@@ -728,7 +760,7 @@
         // === BUILD CAT ===
         function buildCat() {
             const cat = new THREE.Group();
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xf5a623 });
+            const bodyMat = new THREE.MeshStandardMaterial({ color: CONFIG.kattFarg });
 
             // Body
             const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.8, 0.8), bodyMat);
@@ -835,9 +867,9 @@
 
         // === GAME STATE ===
         const katt = { y: 0, vy: 0, grounded: true };
-        const GRAVITY = 0.012;
-        const JUMP_FORCE = 0.25;
-        const MOVE_SPEED = 0.12;
+        const GRAVITY = CONFIG.gravitation;
+        const JUMP_FORCE = CONFIG.hoppkraft;
+        const MOVE_SPEED = CONFIG.hastighet;
 
         const keys = {};
         let mjauFaceTimer = 0;
@@ -1068,9 +1100,9 @@
         chaserFemale.position.set(-25, 0, 10);
         scene.add(chaserFemale);
 
-        chaserMale.speed = 0.09;
+        chaserMale.speed = CONFIG.sorenFart;
         chaserMale.flank = 1;  // flanks right
-        chaserFemale.speed = 0.07;
+        chaserFemale.speed = CONFIG.ludmillaFart;
         chaserFemale.flank = -1; // flanks left
         const chasers = [chaserMale, chaserFemale];
         let gameOver = false;
@@ -1359,8 +1391,8 @@
             if (hasJetpack) {
                 const jetting = keys['Space'];
                 if (jetting) {
-                    katt.vy += 0.02;
-                    if (katt.vy > 0.2) katt.vy = 0.2;
+                    katt.vy += CONFIG.jetpackKraft;
+                    if (katt.vy > CONFIG.jetpackMaxFart) katt.vy = CONFIG.jetpackMaxFart;
                     if (Math.random() > 0.7) playJetpackSound();
                 } else {
                     katt.vy -= GRAVITY;
@@ -1535,7 +1567,7 @@
                         }
 
                         // Collision — net slams down on cat!
-                        if (dist < 1.8 && katt.y < 2.5) {
+                        if (dist < CONFIG.fangstAvstand && katt.y < 2.5) {
                             ch.netGroup.rotation.x = 1.2;
                             ch.armR.rotation.x = 0.8;
                             triggerGameOver();
