@@ -14,28 +14,27 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     padding: 3rem 1rem;
   }
   h1 {
-    font-size: 2.5rem;
-    margin-bottom: 0.5rem;
+    font-size: 3rem;
+    margin-bottom: 2.5rem;
     background: linear-gradient(135deg, #f093fb, #f5576c, #4facfe);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
-  p { color: #888; margin-bottom: 2rem; }
   .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 1.5rem;
-    width: 100%;
-    max-width: 800px;
+    display: flex;
+    gap: 2.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
   }
   .card {
     background: #1a1a2e;
     border: 1px solid #333;
-    border-radius: 12px;
-    padding: 2rem;
+    border-radius: 16px;
+    padding: 3rem 3.5rem;
     text-decoration: none;
     color: #fff;
     transition: transform 0.2s, border-color 0.2s;
@@ -45,29 +44,20 @@
     transform: translateY(-4px);
     border-color: #4facfe;
   }
-  .card .emoji { font-size: 2.5rem; margin-bottom: 0.75rem; }
-  .card .name { font-size: 1.1rem; font-weight: 600; }
+  .card .emoji { font-size: 3.5rem; margin-bottom: 1rem; }
+  .card .name { font-size: 1.3rem; font-weight: 600; }
 </style>
 </head>
 <body>
   <h1>VibeWithKidz</h1>
-  <p>Pick a project!</p>
   <div class="grid">
     <a class="card" href="presentation/">
       <div class="emoji">🖥️</div>
       <div class="name">Presentationen</div>
     </a>
-    <a class="card" href="kod-exempel.html">
-      <div class="emoji">🧑‍💻</div>
-      <div class="name">Kod-Exempel</div>
-    </a>
     <a class="card" href="katt-spel/">
       <div class="emoji">🐱</div>
-      <div class="name">Katt-Spelet</div>
-    </a>
-    <a class="card" href="hello-world/">
-      <div class="emoji">👋</div>
-      <div class="name">Hello World</div>
+      <div class="name">Skolkatten</div>
     </a>
   </div>
 </body>

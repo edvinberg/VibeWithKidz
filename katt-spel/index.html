@@ -2,7 +2,7 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <title>🐱 Katt-Spelet!</title>
+    <title>🐱 Skolkatten!</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -86,123 +86,42 @@
             font-family: 'Courier New', monospace;
         }
         #music-btn:hover { background: rgba(100,50,200,0.5); }
-        .chaser-bubble {
-            position: absolute;
-            z-index: 10;
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: white;
-            background: #cc2222;
-            padding: 6px 14px;
-            border-radius: 12px;
-            pointer-events: none;
-            white-space: nowrap;
-            box-shadow: 0 2px 10px rgba(200,0,0,0.5);
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-        .chaser-bubble::after {
-            content: '';
-            position: absolute;
-            bottom: -8px;
-            left: 15px;
-            border-width: 8px 6px 0;
-            border-style: solid;
-            border-color: #cc2222 transparent transparent;
-        }
-        #gameover-overlay {
+        #splash {
             position: fixed;
             inset: 0;
-            z-index: 100;
-            display: none;
-            flex-direction: column;
+            z-index: 50;
+            display: flex;
             align-items: center;
             justify-content: center;
             pointer-events: none;
-        }
-        #gameover-overlay.active { display: flex; }
-        #gameover-flash {
-            position: fixed;
-            inset: 0;
-            background: red;
-            opacity: 0;
-            z-index: 99;
-            pointer-events: none;
-        }
-        #gameover-bg {
-            position: fixed;
-            inset: 0;
             background: rgba(0, 0, 0, 0.6);
-            z-index: -1;
+            animation: splashFade 2.5s ease-in-out forwards;
         }
-        #gameover-text {
+        #splash span {
             font-size: 5rem;
             font-weight: bold;
             color: #ff3333;
-            text-shadow: 0 0 40px #ff0000, 0 0 80px #ff0000, 0 0 120px #ff4444, 0 2px 8px #000, 0 0 4px #000;
+            text-shadow: 0 0 40px #ff0000, 0 0 80px #ff0000, 0 4px 8px #000;
             -webkit-text-stroke: 2px #220000;
-            animation: none;
-            text-align: center;
+            opacity: 0;
+            animation: splashFade 2.5s ease-in-out forwards;
         }
-        #gameover-sub {
-            font-size: 2rem;
-            color: #f9e2af;
-            text-shadow: 0 0 20px #f9e2af, 0 2px 6px #000, 0 0 4px #000;
-            margin-top: 15px;
-            animation: none;
-        }
-        #gameover-restart {
-            font-size: 1.5rem;
-            color: white;
-            text-shadow: 0 2px 6px #000, 0 0 4px #000;
-            margin-top: 30px;
-            animation: none;
-        }
-        @keyframes slamIn {
-            0% { transform: scale(4) rotate(-10deg); opacity: 0; }
-            50% { transform: scale(1.2) rotate(3deg); opacity: 1; }
-            70% { transform: scale(0.9) rotate(-1deg); }
-            100% { transform: scale(1) rotate(0deg); opacity: 1; }
-        }
-        @keyframes pulseGlow {
-            0%, 100% { text-shadow: 0 0 40px #ff0000, 0 0 80px #ff0000, 0 2px 8px #000; transform: scale(1); }
-            50% { text-shadow: 0 0 60px #ff3333, 0 0 120px #ff0000, 0 0 180px #ff4444, 0 2px 8px #000; transform: scale(1.05); }
-        }
-        @keyframes slideUp {
-            0% { transform: translateY(40px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-        .confetti {
-            position: fixed;
-            width: 10px;
-            height: 10px;
-            z-index: 101;
-            pointer-events: none;
-            border-radius: 2px;
+        @keyframes splashFade {
+            10% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; }
         }
     </style>
 </head>
 <body>
     <div id="ui">
-        <h1>🐱 Katt-Spelet!</h1>
+        <h1>🐱 Skolkatten!</h1>
     </div>
-    <button id="music-btn">🔇 Musik</button>
+    <button id="music-btn">🔊 Musik</button>
     <div id="message">Piltangenter = gå | MELLANSLAG = hoppa | M = mjau!</div>
     <div id="mjau-bubble">MJAU!</div>
     <div id="teacher-bubble"></div>
-    <div class="chaser-bubble" id="chaser-bubble-0"></div>
-    <div class="chaser-bubble" id="chaser-bubble-1"></div>
-    <div id="gameover-flash"></div>
-    <div id="gameover-overlay">
-        <div id="gameover-bg"></div>
-        <div id="gameover-text">🚨 FÅNGAD! 🚨</div>
-        <div id="gameover-sub"></div>
-        <div id="gameover-restart">Tryck R för att spela igen!</div>
-    </div>
+    <div id="splash"><span>HJÄLP KATTEN ÄR LÖS!</span></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
@@ -211,19 +130,14 @@
         // ============================================
         const CONFIG = {
             // -- KATTEN --
-            hastighet: 0.12,        // Hur snabbt katten går
-            hoppkraft: 0.25,        // Hur högt katten hoppar
+            hastighet: 0.1,        // Hur snabbt katten går
+            hoppkraft: 0.30,        // Hur högt katten hoppar
             gravitation: 0.012,     // Hur snabbt man faller ner
             kattFarg: 0xf5a623,     // Kattens färg (orange)
 
             // -- JETPACK --
             jetpackKraft: 0.02,     // Hur snabbt jetpacken lyfter
             jetpackMaxFart: 0.2,    // Max hastighet uppåt med jetpack
-
-            // -- JÄGARNA (Sören & Ludmilla) --
-            sorenFart: 0.09,        // Sörens hastighet
-            ludmillaFart: 0.07,     // Ludmillas hastighet
-            fangstAvstand: 1.8,     // Hur nära de måste vara för att fånga
 
             // -- VÄRLDEN --
             markFarg: 0xc4a882,     // Klassrummets golv-färg
@@ -757,6 +671,81 @@
         scene.add(teacher);
 
 
+        // === TEACHER 2: SEBBE (top-right corner, standing) ===
+        const sebbe = new THREE.Group();
+        const sebbeSkin = new THREE.MeshStandardMaterial({ color: 0xf1c27d });
+        const sebbeTop = new THREE.MeshStandardMaterial({ color: 0x2c3e80 });
+        const sebbeBottom = new THREE.MeshStandardMaterial({ color: 0x2c2c2c });
+        const sebbeHair = new THREE.MeshStandardMaterial({ color: 0x5a3210 });
+
+        // Legs (standing)
+        [-1, 1].forEach(s => {
+            const leg = new THREE.Mesh(new THREE.BoxGeometry(0.22, 1.0, 0.22), sebbeBottom);
+            leg.position.set(s * 0.15, 0.5, 0);
+            leg.castShadow = true;
+            sebbe.add(leg);
+            // Shoes
+            const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.1, 0.35), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+            shoe.position.set(s * 0.15, 0.05, 0.05);
+            sebbe.add(shoe);
+        });
+
+        // Body
+        const sBody = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 0.45), sebbeTop);
+        sBody.position.y = 1.5;
+        sBody.castShadow = true;
+        sebbe.add(sBody);
+
+        // Head
+        const sHead = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 10), sebbeSkin);
+        sHead.position.y = 2.25;
+        sHead.castShadow = true;
+        sebbe.add(sHead);
+        sebbe.head = sHead;
+
+        // Hair (full coverage)
+        const sHairTop = new THREE.Mesh(new THREE.SphereGeometry(0.33, 10, 10), sebbeHair);
+        sHairTop.position.y = 2.3;
+        sHairTop.scale.set(1, 0.85, 1);
+        sebbe.add(sHairTop);
+        const sHairBack = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.4, 0.25), sebbeHair);
+        sHairBack.position.set(0, 2.1, -0.15);
+        sebbe.add(sHairBack);
+        const sHairSides = new THREE.Mesh(new THREE.BoxGeometry(0.64, 0.3, 0.5), sebbeHair);
+        sHairSides.position.set(0, 2.35, -0.02);
+        sebbe.add(sHairSides);
+
+        // Eyes
+        const sEyeMat = new THREE.MeshBasicMaterial({ color: 0x1a1a2e });
+        [-1, 1].forEach(s => {
+            const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), sEyeMat);
+            eye.position.set(s * 0.12, 2.3, 0.27);
+            sebbe.add(eye);
+        });
+
+        // Smile
+        const sSmile = new THREE.Mesh(
+            new THREE.TorusGeometry(0.06, 0.02, 6, 8, Math.PI),
+            new THREE.MeshBasicMaterial({ color: 0x8b0000 })
+        );
+        sSmile.position.set(0, 2.15, 0.28);
+        sSmile.rotation.x = Math.PI;
+        sebbe.add(sSmile);
+
+        // Arms (relaxed at sides)
+        [-1, 1].forEach(s => {
+            const arm = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.7, 0.18), sebbeTop);
+            arm.position.set(s * 0.45, 1.3, 0);
+            sebbe.add(arm);
+            const hand = new THREE.Mesh(new THREE.SphereGeometry(0.09, 6, 6), sebbeSkin);
+            hand.position.set(s * 0.45, 0.9, 0);
+            sebbe.add(hand);
+        });
+
+        sebbe.position.set(ARENA - 2, 0, -ARENA + 2);
+        sebbe.rotation.y = -Math.PI * 0.25;
+        scene.add(sebbe);
+
         // === BUILD CAT ===
         function buildCat() {
             const cat = new THREE.Group();
@@ -986,248 +975,6 @@
             setTimeout(() => { teacherBubbleEl.style.opacity = '0'; }, 3000);
         }
 
-        // === FRITIDSLÄRARE (outside, chase the cat) ===
-        function buildChaser(isMale) {
-            const chaser = new THREE.Group();
-            const skin = new THREE.MeshStandardMaterial({ color: 0xd4a76a });
-            const jacketMat = new THREE.MeshStandardMaterial({ color: 0x1a55aa });
-            const pantsMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
-
-            // Body (upper)
-            const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.1, 0.5), jacketMat);
-            body.position.y = 1.8;
-            body.castShadow = true;
-            chaser.add(body);
-
-            // Long jacket skirt (extends down over legs)
-            const jacketSkirt = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.7, 0.55), jacketMat);
-            jacketSkirt.position.y = 1.0;
-            chaser.add(jacketSkirt);
-
-            // Head
-            const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 10), skin);
-            head.position.y = 2.7;
-            head.castShadow = true;
-            chaser.add(head);
-
-            // Angry eyebrows
-            const browMat = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
-            [-1, 1].forEach(s => {
-                const brow = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.04, 0.06), browMat);
-                brow.position.set(0.28, 2.82, s * 0.12);
-                brow.rotation.z = s * 0.4;
-                chaser.add(brow);
-            });
-
-            // Eyes
-            const eyeMat = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
-            [-1, 1].forEach(s => {
-                const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), eyeMat);
-                eye.position.set(0.28, 2.75, s * 0.12);
-                chaser.add(eye);
-            });
-
-            // Angry mouth
-            const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.04, 0.15), new THREE.MeshBasicMaterial({ color: 0x8b0000 }));
-            mouth.position.set(0.3, 2.55, 0);
-            chaser.add(mouth);
-
-            // Hair
-            const hairMat = new THREE.MeshStandardMaterial({ color: isMale ? 0x2c1b0e : 0x5a3210 });
-            const hair = new THREE.Mesh(new THREE.SphereGeometry(0.33, 10, 10), hairMat);
-            hair.position.y = 2.8;
-            hair.scale.set(1, 0.7, 1);
-            chaser.add(hair);
-            if (!isMale) {
-                const longHair = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.3), hairMat);
-                longHair.position.set(0, 2.4, -0.15);
-                chaser.add(longHair);
-            }
-
-            // Legs
-            [-1, 1].forEach(s => {
-                const leg = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.8, 0.22), pantsMat);
-                leg.position.set(0, 0.7, s * 0.15);
-                chaser.add(leg);
-            });
-            chaser.legs = chaser.children.slice(-2);
-
-            // Arm holding net (right arm up)
-            const armR = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.7, 0.18), jacketMat);
-            armR.position.set(0, 2.3, 0.4);
-            armR.rotation.x = -0.5;
-            chaser.add(armR);
-            // Other arm
-            const armL = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.6, 0.18), jacketMat);
-            armL.position.set(0, 1.6, -0.35);
-            armL.rotation.x = 0.3;
-            chaser.add(armL);
-
-            // Net (hov) - pole + ring + net bag
-            const netGroup = new THREE.Group();
-            // Long pole
-            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.03, 3, 6), new THREE.MeshStandardMaterial({ color: 0x8b5e3c }));
-            pole.position.set(0, 1.5, 0);
-            netGroup.add(pole);
-            // Ring at top of pole (horizontal)
-            const ring = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.035, 8, 20), new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.5 }));
-            ring.position.set(0, 3, 0);
-            ring.rotation.x = Math.PI / 2;
-            netGroup.add(ring);
-            // Net bag hanging DOWN from ring (cone flipped: open end up, tip down)
-            const netBag = new THREE.Mesh(
-                new THREE.ConeGeometry(0.48, 1.0, 10, 1, true),
-                new THREE.MeshStandardMaterial({ color: 0xeeeeee, transparent: true, opacity: 0.4, side: THREE.DoubleSide, wireframe: true })
-            );
-            netBag.position.set(0, 2.5, 0);
-            netBag.rotation.x = Math.PI; // flip so open end is UP at ring
-            netGroup.add(netBag);
-
-            netGroup.position.set(0.1, 0, 0.4);
-            netGroup.rotation.x = -0.6;
-            chaser.add(netGroup);
-            chaser.netGroup = netGroup;
-            chaser.armR = armR;
-
-            return chaser;
-        }
-
-        const chaserMale = buildChaser(true);
-        chaserMale.position.set(25, 0, 0);
-        scene.add(chaserMale);
-
-        const chaserFemale = buildChaser(false);
-        chaserFemale.position.set(-25, 0, 10);
-        scene.add(chaserFemale);
-
-        chaserMale.speed = CONFIG.sorenFart;
-        chaserMale.flank = 1;  // flanks right
-        chaserFemale.speed = CONFIG.ludmillaFart;
-        chaserFemale.flank = -1; // flanks left
-        const chasers = [chaserMale, chaserFemale];
-        let gameOver = false;
-
-        const chaserBubbles = [document.getElementById('chaser-bubble-0'), document.getElementById('chaser-bubble-1')];
-        const sörenShouts = [
-            'KOM HIT DIN KATT!', 'STANNA!', 'JAG FÅR TAG I DIG!',
-            'KISSE KISSE KISSE!', 'NU ÄR DET SLUT!', 'VÄNTA!!!',
-            'JAG ÄR SNABBARE!', 'HALLÅÅÅ!', 'KOM TILLBAKA!',
-            'LUDMILLA, TA HÖGER!', 'JAAAG TAR DEN!', 'DIT KAN DU INTE!',
-        ];
-        const ludmillaShouts = [
-            'DU KOMMER INTE UNDAN!', 'SLUTA SPRING!', 'HIT MED DIG!',
-            'NÄÄÄEJ INTE DIT!', 'FÅNGA KATTEN!', 'SÖREN, SKYNDA!',
-            'JAG SER DIG!', 'NU HAR JAG DIG!', 'HOPPA INTE!',
-            'DEN ÄR MIN!', 'STANNA STILL!', 'KOM IGEN SANSEN!',
-        ];
-        const chaserShouts = [sörenShouts, ludmillaShouts];
-        let chaserShoutTimers = [0, 0];
-
-        const gameoverOverlay = document.getElementById('gameover-overlay');
-        const gameoverFlash = document.getElementById('gameover-flash');
-        const gameoverText = document.getElementById('gameover-text');
-        const gameoverSub = document.getElementById('gameover-sub');
-        const gameoverRestart = document.getElementById('gameover-restart');
-
-        const catchPhrases = [
-            'Sören & Ludmilla fick tag i katten! 🐱',
-            'Fritids vinner denna gång! 💪',
-            'Ingen katt smiter från Sören! 🏃',
-            'Ludmilla: "GOTCHA!" 😼',
-            'Sören svingade håven perfekt! 🥅',
-            'Ludmilla & Sören firar! 🎉',
-        ];
-
-        function triggerGameOver() {
-            gameOver = true;
-
-            // Screen flash
-            gameoverFlash.style.opacity = '0.8';
-            setTimeout(() => { gameoverFlash.style.opacity = '0'; }, 200);
-
-            // Screen shake
-            let shakes = 0;
-            const shakeInterval = setInterval(() => {
-                const sx = (Math.random() - 0.5) * 20;
-                const sy = (Math.random() - 0.5) * 20;
-                renderer.domElement.style.transform = `translate(${sx}px, ${sy}px)`;
-                shakes++;
-                if (shakes > 15) {
-                    clearInterval(shakeInterval);
-                    renderer.domElement.style.transform = '';
-                }
-            }, 30);
-
-            // Show overlay with animations
-            gameoverOverlay.classList.add('active');
-            gameoverText.style.animation = 'slamIn 0.5s ease-out forwards, pulseGlow 1.5s ease-in-out 0.5s infinite';
-            gameoverSub.textContent = catchPhrases[Math.floor(Math.random() * catchPhrases.length)];
-            gameoverSub.style.animation = 'slideUp 0.5s ease-out 0.3s both';
-            gameoverRestart.style.animation = 'slideUp 0.4s ease-out 0.6s both, blink 1s ease-in-out 1s infinite';
-
-            // Confetti / particles burst
-            const confettiColors = ['#ff3333', '#f9e2af', '#a6e3a1', '#89b4fa', '#cba6f7', '#fab387', '#ff6b6b'];
-            for (let i = 0; i < 60; i++) {
-                const c = document.createElement('div');
-                c.className = 'confetti';
-                c.style.background = confettiColors[Math.floor(Math.random() * confettiColors.length)];
-                c.style.left = '50%';
-                c.style.top = '50%';
-                c.style.width = (6 + Math.random() * 10) + 'px';
-                c.style.height = (6 + Math.random() * 10) + 'px';
-                c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-                document.body.appendChild(c);
-                const angle = Math.random() * Math.PI * 2;
-                const speed = 3 + Math.random() * 8;
-                const vx = Math.cos(angle) * speed;
-                const vy = Math.sin(angle) * speed - 5;
-                let cx = window.innerWidth / 2, cy = window.innerHeight / 2;
-                let gvy = vy;
-                const animC = () => {
-                    cx += vx;
-                    gvy += 0.15;
-                    cy += gvy;
-                    c.style.left = cx + 'px';
-                    c.style.top = cy + 'px';
-                    c.style.opacity = Math.max(0, 1 - cy / (window.innerHeight * 1.2));
-                    c.style.transform = `rotate(${cx * 3}deg)`;
-                    if (cy < window.innerHeight * 1.3) requestAnimationFrame(animC);
-                    else c.remove();
-                };
-                requestAnimationFrame(animC);
-            }
-
-            // Sound effect — dramatic catch
-            const o1 = ac.createOscillator(), g1 = ac.createGain();
-            o1.connect(g1); g1.connect(ac.destination);
-            o1.type = 'square'; o1.frequency.setValueAtTime(200, ac.currentTime);
-            o1.frequency.linearRampToValueAtTime(80, ac.currentTime + 0.3);
-            g1.gain.setValueAtTime(0.15, ac.currentTime);
-            g1.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.4);
-            o1.start(); o1.stop(ac.currentTime + 0.4);
-
-            // Hide chaser bubbles
-            chaserBubbles.forEach(b => b.style.opacity = '0');
-            messageEl.textContent = '';
-        }
-
-        function resetGame() {
-            gameOver = false;
-            catMesh.position.set(0, 0, 0);
-            katt.y = 0;
-            katt.vy = 0;
-            katt.grounded = true;
-            chaserMale.position.set(25, 0, 0);
-            chaserFemale.position.set(-25, 0, 10);
-            if (hasJetpack) removeJetpack();
-            messageEl.textContent = 'Piltangenter = gå | MELLANSLAG = hoppa | M = mjau!';
-            messageEl.style.color = '#a6e3a1';
-            gameoverOverlay.classList.remove('active');
-            gameoverText.style.animation = 'none';
-            gameoverSub.style.animation = 'none';
-            gameoverRestart.style.animation = 'none';
-            chaserShoutTimers = [0, 0];
-        }
 
         // === LJUD ===
         const mjauSound = new Audio('mjau.mp3');
@@ -1265,9 +1012,9 @@
                     const m = this.mel[this.step % this.mel.length];
                     const b = this.bas[this.step % this.bas.length];
                     const a = this.arp[this.step % this.arp.length];
-                    if (m !== '_') this.pn(this.nf[m], 'square', 0.06, sd * 1.8);
-                    if (b !== '_') this.pn(this.nf[b] * 0.5, 'sawtooth', 0.04, sd * 1.5);
-                    if (a !== '_') this.pn(this.nf[a], 'square', 0.02, sd * 0.6);
+                    if (m !== '_') this.pn(this.nf[m], 'square', 0.03, sd * 1.8);
+                    if (b !== '_') this.pn(this.nf[b] * 0.5, 'sawtooth', 0.02, sd * 1.5);
+                    if (a !== '_') this.pn(this.nf[a], 'square', 0.01, sd * 0.6);
                     this.step++;
                     this.timer = setTimeout(tick, sd * 1000);
                 };
@@ -1284,20 +1031,20 @@
         // === INPUT ===
         document.addEventListener('keydown', (e) => {
             keys[e.code] = true;
+            // Auto-start music on first interaction
+            if (musicOn && !music.playing) {
+                ac.resume().then(() => music.start());
+            }
             if (e.code === 'Space') {
                 e.preventDefault();
                 ac.resume();
-                if (!gameOver && !hasJetpack && katt.grounded) {
+                if (!hasJetpack && katt.grounded) {
                     katt.vy = JUMP_FORCE;
                     katt.grounded = false;
                 }
             }
-            if (e.code === 'KeyR' && gameOver) {
-                resetGame();
-            }
             if (e.code === 'KeyM') {
                 ac.resume();
-                if (gameOver) return;
                 playMjau();
                 mjauFaceTimer = 30;
                 // Easter egg: meow near teacher
@@ -1320,7 +1067,7 @@
 
         // Music toggle button
         const musicBtn = document.getElementById('music-btn');
-        let musicOn = false;
+        let musicOn = true;
         musicBtn.addEventListener('click', () => {
             ac.resume();
             if (musicOn) {
@@ -1344,12 +1091,10 @@
 
             // Movement (frozen when game over)
             let dx = 0, dz = 0;
-            if (!gameOver) {
-                if (keys['ArrowLeft']) dx -= MOVE_SPEED;
-                if (keys['ArrowRight']) dx += MOVE_SPEED;
-                if (keys['ArrowUp']) dz -= MOVE_SPEED;
-                if (keys['ArrowDown']) dz += MOVE_SPEED;
-            }
+            if (keys['ArrowLeft']) dx -= MOVE_SPEED;
+            if (keys['ArrowRight']) dx += MOVE_SPEED;
+            if (keys['ArrowUp']) dz -= MOVE_SPEED;
+            if (keys['ArrowDown']) dz += MOVE_SPEED;
 
             isMoving = dx !== 0 || dz !== 0;
 
@@ -1463,7 +1208,7 @@
             camera.position.x += (catMesh.position.x - camera.position.x) * 0.05;
             camera.position.z += (catMesh.position.z + 10 - camera.position.z) * 0.05;
             const camTargetY = hasJetpack ? catMesh.position.y + 5 : 5;
-            camera.position.y += (camTargetY - camera.position.y) * 0.05 + Math.sin(time) * 0.1;
+            camera.position.y += (camTargetY - camera.position.y) * 0.05;
             camera.lookAt(catMesh.position.x, catMesh.position.y + 1, catMesh.position.z);
 
             // Light follows cat
@@ -1472,6 +1217,7 @@
 
             // Teacher animate
             teacher.head.rotation.z = Math.sin(time * 1.2) * 0.1;
+            sebbe.head.rotation.z = Math.sin(time * 1.0 + 1) * 0.1;
 
             // Teacher bubble position
             const tScreen = teacher.position.clone();
@@ -1485,111 +1231,6 @@
                 kid.head.rotation.x = Math.sin(time * 1.5 + i * 2) * 0.15 - 0.2;
                 kid.head.rotation.z = Math.sin(time * 0.8 + i * 3) * 0.1;
             });
-
-            // === CHASERS AI ===
-            const catOutside = Math.abs(catMesh.position.x) > ARENA + 1 || Math.abs(catMesh.position.z) > ARENA + 1;
-
-            if (!gameOver) {
-                chasers.forEach((ch, ci) => {
-                    const dirX = catMesh.position.x - ch.position.x;
-                    const dirZ = catMesh.position.z - ch.position.z;
-                    const dist = Math.sqrt(dirX * dirX + dirZ * dirZ);
-
-                    if (catOutside) {
-                        if (dist > 0.5) {
-                            let tx = dirX, tz = dirZ;
-                            if (dist > 5) {
-                                const perpX = -dirZ / dist * ch.flank * 4;
-                                const perpZ = dirX / dist * ch.flank * 4;
-                                tx += perpX;
-                                tz += perpZ;
-                            }
-                            const tDist = Math.sqrt(tx * tx + tz * tz);
-                            const oldCX = ch.position.x;
-                            const oldCZ = ch.position.z;
-                            let newCX = oldCX + (tx / tDist) * ch.speed;
-                            let newCZ = oldCZ + (tz / tDist) * ch.speed;
-
-                            // Wall collision for chasers
-                            const cw = 1.0;
-                            if (newCZ > -ARENA - cw && newCZ < ARENA + cw) {
-                                if ((oldCX > -ARENA + cw && newCX <= -ARENA + cw) || (oldCX < -ARENA - cw && newCX >= -ARENA - cw)) newCX = oldCX;
-                                if ((oldCX < ARENA - cw && newCX >= ARENA - cw) || (oldCX > ARENA + cw && newCX <= ARENA + cw)) newCX = oldCX;
-                            }
-                            if (newCX > -ARENA - cw && newCX < ARENA + cw) {
-                                if ((oldCZ > -ARENA + cw && newCZ <= -ARENA + cw) || (oldCZ < -ARENA - cw && newCZ >= -ARENA - cw)) newCZ = oldCZ;
-                                if ((oldCZ < ARENA - cw && newCZ >= ARENA - cw) || (oldCZ > ARENA + cw && newCZ <= ARENA + cw)) newCZ = oldCZ;
-                            }
-
-                            ch.position.x = newCX;
-                            ch.position.z = newCZ;
-                            ch.rotation.y = Math.atan2(tx, tz);
-
-                            const legSpeed = 18 + ci * 4;
-                            ch.legs[0].position.z = 0.15 + Math.sin(time * legSpeed) * 0.25;
-                            ch.legs[1].position.z = -0.15 + Math.sin(time * legSpeed + Math.PI) * 0.25;
-                        }
-
-                        // Push apart
-                        const other = chasers[1 - ci];
-                        const sepX = ch.position.x - other.position.x;
-                        const sepZ = ch.position.z - other.position.z;
-                        const sepDist = Math.sqrt(sepX * sepX + sepZ * sepZ);
-                        if (sepDist < 3 && sepDist > 0.01) {
-                            ch.position.x += (sepX / sepDist) * 0.04;
-                            ch.position.z += (sepZ / sepDist) * 0.04;
-                        }
-
-                        // Shout while chasing!
-                        chaserShoutTimers[ci]--;
-                        if (chaserShoutTimers[ci] <= 0) {
-                            const shouts = chaserShouts[ci];
-                            chaserBubbles[ci].textContent = shouts[Math.floor(Math.random() * shouts.length)];
-                            chaserBubbles[ci].style.opacity = '1';
-                            chaserShoutTimers[ci] = 80 + Math.floor(Math.random() * 120);
-                            setTimeout(() => { chaserBubbles[ci].style.opacity = '0'; }, 1500);
-                        }
-                        // Position bubble above chaser
-                        const chScreen = ch.position.clone();
-                        chScreen.y += 3.5;
-                        chScreen.project(camera);
-                        chaserBubbles[ci].style.left = ((chScreen.x + 1) / 2 * window.innerWidth - 60) + 'px';
-                        chaserBubbles[ci].style.top = ((-chScreen.y + 1) / 2 * window.innerHeight) + 'px';
-
-                        // Swing net when close!
-                        if (dist < 4) {
-                            const swingAngle = Math.sin(time * (10 + ci * 3)) * 1.2 - 0.5;
-                            ch.netGroup.rotation.x = swingAngle;
-                            ch.armR.rotation.x = swingAngle * 0.6;
-                        } else {
-                            ch.netGroup.rotation.x = -0.8;
-                            ch.armR.rotation.x = -0.5;
-                        }
-
-                        // Collision — net slams down on cat!
-                        if (dist < CONFIG.fangstAvstand && katt.y < 2.5) {
-                            ch.netGroup.rotation.x = 1.2;
-                            ch.armR.rotation.x = 0.8;
-                            triggerGameOver();
-                        }
-                    } else {
-                        ch.netGroup.rotation.x = -0.8;
-                        ch.armR.rotation.x = -0.5;
-                        chaserBubbles[ci].style.opacity = '0';
-                    }
-                });
-            }
-
-            // Game over — wait for restart
-            if (gameOver) {
-                if (keys['KeyR']) {
-                    resetGame();
-                    chasers.forEach(ch => {
-                        ch.netGroup.rotation.x = -0.8;
-                        ch.armR.rotation.x = -0.5;
-                    });
-                }
-            }
 
             // Falling snow
             snowParticles.forEach(flake => {
